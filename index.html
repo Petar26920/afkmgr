@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>AFK Manager v1.3</title>
+<title>AFK Manager v2</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -567,11 +567,42 @@ body::before{
   </div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD8yIOIKJeeYkuLQYTo64S_LrfUhRRvW0Q",
+  authDomain: "afk-manager-31a3c.firebaseapp.com",
+  projectId: "afk-manager-31a3c",
+  storageBucket: "afk-manager-31a3c.firebasestorage.app",
+  messagingSenderId: "964360625277",
+  appId: "1:964360625277:web:b55617f3c8eca387f3a514"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const DATA_REF = doc(db, "wallboard", "liveData");
+
+window.firebaseDb = db;
+window.firebaseDataRef = DATA_REF;
+window.firebaseFirestore = {
+  getDoc,
+  setDoc,
+  onSnapshot
+};
+</script>
+<script type="module">
 // ═══════════════════════════════════════════════
 //  DATA
 // ═══════════════════════════════════════════════
-const STORAGE_KEY = 'afk_manager_v13';
+
 const PASSWORD    = 'Gamma1255';
 
 const DEFAULT_DATA = {
@@ -623,22 +654,44 @@ const DEFAULT_DATA = {
   patchWeek: 'Week 20',
 };
 
-let DATA = loadData();
+let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let isAdmin = false;
 let activeModalType = 'coffee';
 
-function loadData(){
+async function loadData() {
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_DATA));
-  } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+    const snap = await window.firebaseFirestore.getDoc(window.firebaseDataRef);
+
+    if (snap.exists()) {
+      DATA = snap.data();
+    } else {
+      DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      await saveData();
+    }
+
+    render();
+  } catch (err) {
+    console.error('Firebase load failed:', err);
+    DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
+    render();
+  }
 }
-function saveData(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
-  const el = document.getElementById('last-update');
-  el.textContent = 'Saved · ' + new Date().toLocaleTimeString();
-  setTimeout(()=>{ el.textContent = 'Live · auto-saves on change'; }, 2000);
+
+async function saveData() {
+  try {
+    await window.firebaseFirestore.setDoc(window.firebaseDataRef, DATA);
+
+    const el = document.getElementById('last-update');
+    el.textContent = 'Saved · ' + new Date().toLocaleTimeString();
+
+    setTimeout(() => {
+      el.textContent = 'Live · synced with Firebase';
+    }, 2000);
+  } catch (err) {
+    console.error('Firebase save failed:', err);
+  }
 }
+
 
 // ═══════════════════════════════════════════════
 //  LOCK / AUTH
@@ -1041,10 +1094,19 @@ document.getElementById('patch-input').addEventListener('input', function(){
   renderPatching(); renderMetrics(); saveData();
 });
 
+
+window.firebaseFirestore.onSnapshot(window.firebaseDataRef, (snap) => {
+  if (!snap.exists()) return;
+
+  DATA = snap.data();
+  render();
+});
+
 // boot straight into viewer
 isAdmin = false;
 applyMode();
-render();
+
+loadData();
 </script>
 </body>
 </html>
