@@ -4,7 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>AFK Manager v1.3</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg:       #080b10;
@@ -420,6 +421,32 @@ body::before{
   </div>
 </div>
 
+<!-- ════════ EXCEL IMPORT MODAL ════════ -->
+<div class="modal-overlay" id="excel-modal">
+  <div class="modal" style="width:520px;max-width:95vw;">
+    <h2>📋 Import from Excel</h2>
+    <p style="margin-bottom:8px;">Paste your Excel break schedule below. Expected columns: <span style="font-family:var(--mono);color:var(--amber)">Time Slot · Agent 1 · Agent 2 (…)</span></p>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px;">The first row is treated as a header and skipped. Rows with a name in any agent column become breaks. Slots of 10 min = coffee break; 30 min = lunch break.</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.04em;text-transform:uppercase;display:block;margin-bottom:5px;">Import mode</label>
+      <div style="display:flex;gap:6px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
+          <input type="radio" name="import-mode" value="replace" checked style="accent-color:var(--blue);"> Replace all current breaks
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;">
+          <input type="radio" name="import-mode" value="merge"> Merge with existing
+        </label>
+      </div>
+    </div>
+    <textarea id="excel-paste" placeholder="Paste Excel data here (Ctrl+V)…" style="width:100%;height:200px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+    <div id="excel-preview" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono);min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="closeExcelModal()">Cancel</button>
+      <button class="modal-ok" onclick="confirmExcelImport()" style="background:var(--green);color:#000;">✓ Import breaks</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ APP ════════ -->
 <div id="app">
   <div class="header">
@@ -467,7 +494,10 @@ body::before{
       <div class="card admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-amber"></span>Coffee breaks</div>
-          <button class="add-btn" onclick="openModal('coffee')">+ Add</button>
+          <div style="display:flex;gap:6px;">
+            <button class="add-btn" onclick="openExcelModal()" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);">📋 Import Excel</button>
+            <button class="add-btn" onclick="openModal('coffee')">+ Add</button>
+          </div>
         </div>
         <div id="coffee-list"></div>
       </div>
@@ -810,6 +840,154 @@ function addAgent(){
 }
 function removeAgent(idx){
   DATA.agents.splice(idx,1);
+  render(); saveData();
+}
+
+// ═══════════════════════════════════════════════
+//  EXCEL IMPORT
+// ═══════════════════════════════════════════════
+function openExcelModal(){
+  document.getElementById('excel-paste').value = '';
+  document.getElementById('excel-preview').textContent = '';
+  document.getElementById('excel-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('excel-paste').focus(), 100);
+}
+function closeExcelModal(){
+  document.getElementById('excel-modal').classList.remove('open');
+}
+
+// Live preview as user types/pastes
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('excel-paste').addEventListener('input', previewExcel);
+});
+function previewExcel(){
+  const raw = document.getElementById('excel-paste').value.trim();
+  if(!raw){ document.getElementById('excel-preview').textContent=''; return; }
+  const { coffeeBreaks, lunchBreaks, triageSlots, errors } = parseExcelBreaks(raw);
+  const total = coffeeBreaks.length + lunchBreaks.length + triageSlots.length;
+  const prev = document.getElementById('excel-preview');
+  if(total===0){
+    prev.style.color='var(--red)';
+    prev.textContent = errors.length ? '\u26a0 '+errors[0] : '\u26a0 No break rows detected. Check your data.';
+  } else {
+    prev.style.color='var(--green)';
+    const parts = [];
+    if(coffeeBreaks.length) parts.push(coffeeBreaks.length+' coffee break'+(coffeeBreaks.length!==1?'s':''));
+    if(lunchBreaks.length)  parts.push(lunchBreaks.length+' lunch break'+(lunchBreaks.length!==1?'s':''));
+    if(triageSlots.length)  parts.push(triageSlots.length+' triage slot'+(triageSlots.length!==1?'s':''));
+    prev.textContent = '\u2713 Detected '+parts.join(', ')+(errors.length?' \u00b7 \u26a0 '+errors.length+' skipped row(s)':'');
+  }
+}
+
+function parseExcelBreaks(raw){
+  const errors=[];
+  const lines = raw.split('\n').map(l=>l.replace(/\r/,'')).filter(l=>l.trim());
+  if(lines.length < 2){ errors.push('Not enough rows'); return {coffeeBreaks:[],lunchBreaks:[],triageSlots:[],errors}; }
+
+  // Skip first header row
+  const dataLines = lines.slice(1);
+
+  // Buckets keyed by row duration
+  const coffeeRaw=[], lunchRaw=[], triageRaw=[];
+
+  for(const line of dataLines){
+    const cols = line.split('\t');
+    const timeStr = (cols[0]||'').trim();
+    if(!timeStr || !/\d/.test(timeStr)) continue;
+
+    const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/);
+    if(!timeMatch){ errors.push('Bad time: '+timeStr); continue; }
+    const start = parseInt(timeMatch[1])*60 + parseInt(timeMatch[2]);
+    const end   = parseInt(timeMatch[3])*60 + parseInt(timeMatch[4]);
+    const dur   = end - start;
+
+    const agentCols = cols.slice(1).map(c=>c.trim()).filter(c=>c && c.length>1);
+    if(!agentCols.length) continue;
+
+    for(const agent of agentCols){
+      const entry = { agent, start, end };
+      if(dur <= 15)       coffeeRaw.push(entry);   // 10-min rows → coffee
+      else if(dur <= 45)  lunchRaw.push(entry);    // 30-min rows → lunch
+      else                triageRaw.push(entry);   // 60-min rows → triage
+    }
+  }
+
+  // Merge consecutive slots per bucket
+  function mergeConsecutive(entries){
+    if(!entries.length) return [];
+    const sorted = [...entries].sort((a,b)=> a.agent.localeCompare(b.agent)||a.start-b.start);
+    const merged = [];
+    let cur = {...sorted[0]};
+    for(let i=1;i<sorted.length;i++){
+      const b = sorted[i];
+      if(b.agent===cur.agent && b.start===cur.end){
+        cur.end = b.end;
+      } else {
+        merged.push(cur);
+        cur = {...b};
+      }
+    }
+    merged.push(cur);
+    return merged;
+  }
+
+  const coffeeBreaks = mergeConsecutive(coffeeRaw);
+  const lunchBreaks  = mergeConsecutive(lunchRaw);
+
+  // Triage: merge and build slot objects
+  const triageSlots = [];
+  for(const b of mergeConsecutive(triageRaw)){
+    const timeLabel = fmtM(b.start)+'–'+fmtM(b.end);
+    const existing = triageSlots.find(t=>t.start===b.start&&t.end===b.end);
+    if(existing){ existing.agent = b.agent; }
+    else { triageSlots.push({ time: timeLabel, agent: b.agent, start: b.start, end: b.end }); }
+  }
+  triageSlots.sort((a,b)=>a.start-b.start);
+
+  return { coffeeBreaks, lunchBreaks, triageSlots, errors };
+}
+
+function confirmExcelImport(){
+  const raw = document.getElementById('excel-paste').value.trim();
+  if(!raw){ alert('Paste some data first.'); return; }
+  const { coffeeBreaks, lunchBreaks, triageSlots, errors } = parseExcelBreaks(raw);
+  const total = coffeeBreaks.length + lunchBreaks.length + triageSlots.length;
+  if(total===0){ alert('No break rows detected. Check your data format.'); return; }
+
+  const mode = document.querySelector('input[name="import-mode"]:checked').value;
+  if(mode==='replace'){
+    DATA.coffeeBreaks = coffeeBreaks;
+    DATA.lunchBreaks  = lunchBreaks;
+    // For triage: replace only the slots whose time windows appear in import; keep others
+    if(triageSlots.length){
+      const importedKeys = new Set(triageSlots.map(t=>t.start+'|'+t.end));
+      DATA.triageSlots = DATA.triageSlots.map(t=>{
+        const key = t.start+'|'+t.end;
+        const match = triageSlots.find(s=>s.start===t.start&&s.end===t.end);
+        return match ? {...t, agent: match.agent} : t;
+      });
+      // Add any triage slots that don't match existing windows
+      triageSlots.forEach(s=>{
+        if(!DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end)){
+          DATA.triageSlots.push(s);
+        }
+      });
+      DATA.triageSlots.sort((a,b)=>a.start-b.start);
+    }
+  } else {
+    const key = b => b.agent+'|'+b.start;
+    const existingCoffeeKeys = new Set(DATA.coffeeBreaks.map(key));
+    const existingLunchKeys  = new Set(DATA.lunchBreaks.map(key));
+    coffeeBreaks.forEach(b=>{ if(!existingCoffeeKeys.has(key(b))) DATA.coffeeBreaks.push(b); });
+    lunchBreaks .forEach(b=>{ if(!existingLunchKeys .has(key(b))) DATA.lunchBreaks .push(b); });
+    triageSlots.forEach(s=>{
+      const existing = DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end);
+      if(existing) existing.agent = s.agent;
+      else { DATA.triageSlots.push(s); DATA.triageSlots.sort((a,b)=>a.start-b.start); }
+    });
+  }
+
+  closeExcelModal();
   render(); saveData();
 }
 
