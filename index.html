@@ -568,6 +568,7 @@ body::before{
 </div>
 
 <script type="module">
+
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore,
@@ -577,6 +578,9 @@ import {
   onSnapshot
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+// ═══════════════════════════════════════════════
+// FIREBASE
+// ═══════════════════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyD8yIOIKJeeYkuLQYTo64S_LrfUhRRvW0Q",
   authDomain: "afk-manager-31a3c.firebaseapp.com",
@@ -590,20 +594,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const DATA_REF = doc(db, "wallboard", "liveData");
 
-window.firebaseDb = db;
-window.firebaseDataRef = DATA_REF;
-window.firebaseFirestore = {
-  getDoc,
-  setDoc,
-  onSnapshot
-};
-</script>
-<script type="module">
 // ═══════════════════════════════════════════════
-//  DATA
+// DATA
 // ═══════════════════════════════════════════════
-
-const PASSWORD    = 'Gamma1255';
+const PASSWORD = 'Gamma1255';
 
 const DEFAULT_DATA = {
   agents: [
@@ -613,54 +607,28 @@ const DEFAULT_DATA = {
     'Dimitrije Milosavljevic','David Kostic','Isidora Stevanovic',
     'Petar Spasic','Radislav Lazarevic'
   ],
-  coffeeBreaks: [
-    {agent:'Bojan Pavlovic',   start:660, end:690},
-    {agent:'Bogdan Repanovic', start:900, end:930},
-    {agent:'Aleksa Kostic',    start:900, end:930},
-    {agent:'Stefan Krstic',    start:930, end:960},
-  ],
-  lunchBreaks: [
-    {agent:'Bojan Pavlovic',      start:720, end:750},
-    {agent:'Tamara Trakic',       start:720, end:750},
-    {agent:'Aleksa Kostic',       start:720, end:750},
-    {agent:'Isidora Stevanovic',  start:760, end:790},
-    {agent:'Bogdan Repanovic',    start:760, end:790},
-    {agent:'Danica Pecanac',      start:760, end:790},
-    {agent:'Luka Martinovic',     start:800, end:830},
-    {agent:'Stefan Krstic',       start:800, end:830},
-    {agent:'Petar Spasic',        start:800, end:830},
-    {agent:'Sari Abboushi',       start:900, end:930},
-  ],
-  triageSlots: [
-    {time:'08:00–09:00', agent:'Bojan Pavlovic',    start:480, end:540},
-    {time:'09:00–10:00', agent:'Tamara Trakic',     start:540, end:600},
-    {time:'10:00–11:00', agent:'Isidora Stevanovic',start:600, end:660},
-    {time:'11:00–12:00', agent:'Bogdan Repanovic',  start:660, end:720},
-    {time:'12:00–13:00', agent:'Stefan Krstic',     start:720, end:780},
-    {time:'13:00–14:00', agent:'Aleksa Kostic',     start:780, end:840},
-    {time:'14:00–15:00', agent:'Petar Spasic',      start:840, end:900},
-    {time:'15:00–16:00', agent:'Danica Pecanac',    start:900, end:960},
-    {time:'16:00–17:00', agent:'Luka Martinovic',   start:960, end:1020},
-    {time:'17:00–18:00', agent:'Ivan Curcic',       start:1020,end:1080},
-  ],
+  coffeeBreaks: [],
+  lunchBreaks: [],
+  triageSlots: [],
   rules: [
     'Max 2 agents on coffee/smoke break at the same time',
-    'Lunch limited to 3 agents per time slot',
-    'Mon & Tue — no break slots booked after 16:00',
-    'Book your slot and stick to it. No last-minute swaps.',
-    'Emergencies — communicate with the team leader first',
+    'Lunch limited to 3 agents per time slot'
   ],
   patchingAgent: 'Ivan Curcic',
-  patchWeek: 'Week 20',
+  patchWeek: 'Week 20'
 };
 
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let isAdmin = false;
-let activeModalType = 'coffee';
 
+window.isAdmin = isAdmin;
+
+// ═══════════════════════════════════════════════
+// FIREBASE LOAD/SAVE
+// ═══════════════════════════════════════════════
 async function loadData() {
   try {
-    const snap = await window.firebaseFirestore.getDoc(window.firebaseDataRef);
+    const snap = await getDoc(DATA_REF);
 
     if (snap.exists()) {
       DATA = snap.data();
@@ -671,442 +639,21 @@ async function loadData() {
 
     render();
   } catch (err) {
-    console.error('Firebase load failed:', err);
-    DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
-    render();
+    console.error(err);
   }
 }
 
 async function saveData() {
   try {
-    await window.firebaseFirestore.setDoc(window.firebaseDataRef, DATA);
+    await setDoc(DATA_REF, DATA);
 
     const el = document.getElementById('last-update');
-    el.textContent = 'Saved · ' + new Date().toLocaleTimeString();
 
-    setTimeout(() => {
-      el.textContent = 'Live · synced with Firebase';
-    }, 2000);
-  } catch (err) {
-    console.error('Firebase save failed:', err);
-  }
-}
+    if(el){
+      el.textContent = 'Saved · ' + new Date().toLocaleTimeString();
 
-
-// ═══════════════════════════════════════════════
-//  LOCK / AUTH
-// ═══════════════════════════════════════════════
-function showAdminLogin(){
-  document.getElementById('pw-input').value = '';
-  document.getElementById('lock-err').textContent = '';
-  document.getElementById('lock-screen').style.display = 'flex';
-}
-function cancelAdminLogin(){
-  document.getElementById('lock-screen').style.display = 'none';
-}
-function doAdminLogin(){
-  const pw = document.getElementById('pw-input').value;
-  if(pw !== PASSWORD){
-    const inp = document.getElementById('pw-input');
-    inp.classList.add('error');
-    document.getElementById('lock-err').textContent = 'Incorrect password.';
-    setTimeout(()=>inp.classList.remove('error'), 500);
-    return;
-  }
-  isAdmin = true;
-  document.getElementById('lock-screen').style.display = 'none';
-  applyMode();
-  render();
-}
-function lockApp(){
-  isAdmin = false;
-  applyMode();
-  render();
-}
-function applyMode(){
-  const app = document.getElementById('app');
-  app.classList.toggle('admin-mode', isAdmin);
-  const badge = document.getElementById('mode-badge');
-  badge.textContent = isAdmin ? 'ADMIN' : 'VIEWER';
-  badge.className = 'mode-badge ' + (isAdmin ? 'admin' : 'viewer');
-  const adminBtn = document.getElementById('admin-btn');
-  if(adminBtn) adminBtn.textContent = isAdmin ? '🔒 Exit Admin' : '🔐 Admin';
-}
-
-// ═══════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════
-const AV = [
-  {bg:'rgba(61,158,255,0.15)', fg:'#3d9eff'},
-  {bg:'rgba(0,229,160,0.15)',  fg:'#00e5a0'},
-  {bg:'rgba(181,122,255,0.15)',fg:'#b57aff'},
-  {bg:'rgba(255,179,64,0.15)', fg:'#ffb340'},
-  {bg:'rgba(0,212,212,0.15)',  fg:'#00d4d4'},
-  {bg:'rgba(255,79,79,0.15)',  fg:'#ff4f4f'},
-];
-function avStyle(name){
-  let hash=0; for(let c of name) hash=(hash*31+c.charCodeAt(0))&0xffff;
-  const col=AV[hash%AV.length];
-  return `background:${col.bg};color:${col.fg};`;
-}
-function initials(n){ return n.trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
-const pad = n => String(n).padStart(2,'0');
-function fmtM(m){ return pad(Math.floor(m/60))+':'+pad(m%60); }
-function nowMins(){ const n=new Date(); return n.getHours()*60+n.getMinutes()+n.getSeconds()/60; }
-
-const DAY_START=480, DAY_END=1080, SPAN=DAY_END-DAY_START;
-function pct(m){ return Math.max(0,Math.min(100,(m-DAY_START)/SPAN*100)).toFixed(2); }
-function pctw(d){ return (d/SPAN*100).toFixed(2); }
-
-// ═══════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════
-function render(){
-  renderBreaks('coffee-list', DATA.coffeeBreaks, 'coffee');
-  renderBreaks('lunch-list',  DATA.lunchBreaks,  'lunch');
-  renderTimeline();
-  renderTriage();
-  renderPatching();
-  renderRules();
-  renderAgents();
-  renderMetrics();
-  populateAgentSelect();
-}
-
-function renderBreaks(containerId, breaks, type){
-  const el = document.getElementById(containerId);
-  const now = nowMins();
-  if(!breaks.length){ el.innerHTML='<div class="empty">No breaks scheduled</div>'; return; }
-  el.innerHTML = breaks.map((b,i)=>{
-    const active = now>=b.start && now<b.end;
-    const badgeClass = active ? 'badge-now' : (type==='coffee'?'badge-coffee':'badge-lunch');
-    const badgeLabel = active ? '● NOW' : fmtM(b.start)+'–'+fmtM(b.end);
-    return `<div class="break-row" data-type="${type}" data-idx="${i}">
-      <div class="avatar" style="${avStyle(b.agent)}">${initials(b.agent)}</div>
-      <span class="break-name-display break-name">${b.agent}</span>
-      <input class="edit-field name-field" value="${b.agent}" onchange="updateBreak('${type}',${i},'agent',this.value)" />
-      <input class="edit-field" type="time" value="${fmtM(b.start)}" onchange="updateBreakTime('${type}',${i},'start',this.value)" />
-      <input class="edit-field" type="time" value="${fmtM(b.end)}" onchange="updateBreakTime('${type}',${i},'end',this.value)" />
-      <span class="badge ${badgeClass}">${badgeLabel}</span>
-      <button class="del-btn" onclick="deleteBreak('${type}',${i})" title="Remove">✕</button>
-    </div>`;
-  }).join('');
-}
-
-function renderTimeline(){
-  const now = nowMins();
-  const np  = pct(now);
-  const agents = [...new Set([...DATA.coffeeBreaks,...DATA.lunchBreaks].map(b=>b.agent))];
-  document.getElementById('tl-wrap').innerHTML = agents.map(ag=>{
-    const bars = [
-      ...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),
-      ...DATA.lunchBreaks .filter(b=>b.agent===ag).map(b=>({...b,type:'lunch'})),
-    ].map(b=>`<div class="tl-bar tl-${b.type}" style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%" title="${b.agent} ${fmtM(b.start)}-${fmtM(b.end)}"></div>`).join('');
-    return `<div class="tl-row">
-      <div class="tl-name">${ag}</div>
-      <div class="tl-track">${bars}<div class="tl-now" style="left:${np}%"></div></div>
-    </div>`;
-  }).join('');
-}
-
-function renderTriage(){
-  const now = nowMins();
-  document.getElementById('triage-grid').innerHTML = DATA.triageSlots.map((t,i)=>{
-    const active = now>=t.start && now<t.end;
-    return `<div class="triage-slot ${active?'now':''}">
-      <div class="triage-time">${t.time}</div>
-      <div class="triage-agent triage-agent-display">${t.agent}</div>
-      <input class="triage-input triage-edit" value="${t.agent}" onchange="DATA.triageSlots[${i}].agent=this.value;renderMetrics();saveData();" />
-    </div>`;
-  }).join('');
-}
-
-function renderPatching(){
-  document.getElementById('patch-display').textContent  = DATA.patchingAgent || '—';
-  document.getElementById('patch-input').value           = DATA.patchingAgent || '';
-  document.getElementById('patch-week-badge').textContent= DATA.patchWeek    || 'Week —';
-  document.getElementById('m-patch-week-sub').textContent= DATA.patchWeek    || 'this week';
-}
-
-function renderRules(){
-  document.getElementById('rules-list').innerHTML = DATA.rules.map((r,i)=>`
-    <div class="rule-item">
-      <span class="rule-num">0${i+1}</span>
-      <span class="rule-text">${r}</span>
-      <input class="rule-input" value="${r}" onchange="DATA.rules[${i}]=this.value;saveData();" />
-      <button class="del-btn" onclick="DATA.rules.splice(${i},1);render();saveData();" title="Remove">✕</button>
-    </div>`).join('');
-}
-
-function renderAgents(){
-  document.getElementById('agents-grid').innerHTML = DATA.agents.map((a,i)=>`
-    <div class="agent-item">
-      <div class="avatar" style="${avStyle(a)};width:24px;height:24px;font-size:9px;">${initials(a)}</div>
-      <span class="agent-item-name">${a}</span>
-      <input class="agent-name-input" value="${a}" onchange="DATA.agents[${i}]=this.value;render();saveData();" />
-      <button class="del-btn" onclick="removeAgent(${i})" title="Remove">✕</button>
-    </div>`).join('');
-  document.getElementById('m-total').textContent = DATA.agents.length;
-}
-
-function renderMetrics(){
-  const now  = nowMins();
-  const afk  = [...new Set([...DATA.coffeeBreaks,...DATA.lunchBreaks]
-               .filter(b=>now>=b.start&&now<b.end).map(b=>b.agent))];
-  const triN = DATA.triageSlots.find(t=>now>=t.start&&now<t.end);
-  document.getElementById('m-afk').textContent     = afk.length;
-  document.getElementById('m-afk-sub').textContent = afk.length
-    ? afk.slice(0,2).map(n=>n.split(' ')[0]).join(', ') : 'none right now';
-  document.getElementById('m-triage').textContent   = triN ? triN.agent.split(' ')[0] : '—';
-  document.getElementById('m-patch-val').textContent= DATA.patchingAgent || '—';
-  document.getElementById('m-patch-week-sub').textContent = DATA.patchWeek || 'this week';
-  document.getElementById('m-total').textContent    = DATA.agents.length;
-}
-
-function populateAgentSelect(){
-  const sel = document.getElementById('m-agent');
-  sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
-}
-
-// ═══════════════════════════════════════════════
-//  EDIT ACTIONS
-// ═══════════════════════════════════════════════
-function updateBreak(type, idx, field, val){
-  const arr = type==='coffee' ? DATA.coffeeBreaks : DATA.lunchBreaks;
-  arr[idx][field] = val;
-  render(); saveData();
-}
-function updateBreakTime(type, idx, field, val){
-  const [h,m] = val.split(':').map(Number);
-  const arr = type==='coffee' ? DATA.coffeeBreaks : DATA.lunchBreaks;
-  arr[idx][field] = h*60+m;
-  render(); saveData();
-}
-function deleteBreak(type, idx){
-  const arr = type==='coffee' ? DATA.coffeeBreaks : DATA.lunchBreaks;
-  arr.splice(idx,1);
-  render(); saveData();
-}
-function addAgent(){
-  DATA.agents.push('New Agent');
-  render(); saveData();
-}
-function removeAgent(idx){
-  DATA.agents.splice(idx,1);
-  render(); saveData();
-}
-
-// ═══════════════════════════════════════════════
-//  EXCEL IMPORT
-// ═══════════════════════════════════════════════
-function openExcelModal(){
-  document.getElementById('excel-paste').value = '';
-  document.getElementById('excel-preview').textContent = '';
-  document.getElementById('excel-modal').classList.add('open');
-  setTimeout(()=>document.getElementById('excel-paste').focus(), 100);
-}
-function closeExcelModal(){
-  document.getElementById('excel-modal').classList.remove('open');
-}
-
-// Live preview as user types/pastes
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('excel-paste').addEventListener('input', previewExcel);
-});
-function previewExcel(){
-  const raw = document.getElementById('excel-paste').value.trim();
-  if(!raw){ document.getElementById('excel-preview').textContent=''; return; }
-  const { coffeeBreaks, lunchBreaks, triageSlots, errors } = parseExcelBreaks(raw);
-  const total = coffeeBreaks.length + lunchBreaks.length + triageSlots.length;
-  const prev = document.getElementById('excel-preview');
-  if(total===0){
-    prev.style.color='var(--red)';
-    prev.textContent = errors.length ? '\u26a0 '+errors[0] : '\u26a0 No break rows detected. Check your data.';
-  } else {
-    prev.style.color='var(--green)';
-    const parts = [];
-    if(coffeeBreaks.length) parts.push(coffeeBreaks.length+' coffee break'+(coffeeBreaks.length!==1?'s':''));
-    if(lunchBreaks.length)  parts.push(lunchBreaks.length+' lunch break'+(lunchBreaks.length!==1?'s':''));
-    if(triageSlots.length)  parts.push(triageSlots.length+' triage slot'+(triageSlots.length!==1?'s':''));
-    prev.textContent = '\u2713 Detected '+parts.join(', ')+(errors.length?' \u00b7 \u26a0 '+errors.length+' skipped row(s)':'');
-  }
-}
-
-function parseExcelBreaks(raw){
-  const errors=[];
-  const lines = raw.split('\n').map(l=>l.replace(/\r/,'')).filter(l=>l.trim());
-  if(lines.length < 2){ errors.push('Not enough rows'); return {coffeeBreaks:[],lunchBreaks:[],triageSlots:[],errors}; }
-
-  // Skip first header row
-  const dataLines = lines.slice(1);
-
-  // Buckets keyed by row duration
-  const coffeeRaw=[], lunchRaw=[], triageRaw=[];
-
-  for(const line of dataLines){
-    const cols = line.split('\t');
-    const timeStr = (cols[0]||'').trim();
-    if(!timeStr || !/\d/.test(timeStr)) continue;
-
-    const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/);
-    if(!timeMatch){ errors.push('Bad time: '+timeStr); continue; }
-    const start = parseInt(timeMatch[1])*60 + parseInt(timeMatch[2]);
-    const end   = parseInt(timeMatch[3])*60 + parseInt(timeMatch[4]);
-    const dur   = end - start;
-
-    const agentCols = cols.slice(1).map(c=>c.trim()).filter(c=>c && c.length>1);
-    if(!agentCols.length) continue;
-
-    for(const agent of agentCols){
-      const entry = { agent, start, end };
-      if(dur <= 15)       coffeeRaw.push(entry);   // 10-min rows → coffee
-      else if(dur <= 45)  lunchRaw.push(entry);    // 30-min rows → lunch
-      else                triageRaw.push(entry);   // 60-min rows → triage
-    }
-  }
-
-  // Merge consecutive slots per bucket
-  function mergeConsecutive(entries){
-    if(!entries.length) return [];
-    const sorted = [...entries].sort((a,b)=> a.agent.localeCompare(b.agent)||a.start-b.start);
-    const merged = [];
-    let cur = {...sorted[0]};
-    for(let i=1;i<sorted.length;i++){
-      const b = sorted[i];
-      if(b.agent===cur.agent && b.start===cur.end){
-        cur.end = b.end;
-      } else {
-        merged.push(cur);
-        cur = {...b};
-      }
-    }
-    merged.push(cur);
-    return merged;
-  }
-
-  const coffeeBreaks = mergeConsecutive(coffeeRaw);
-  const lunchBreaks  = mergeConsecutive(lunchRaw);
-
-  // Triage: merge and build slot objects
-  const triageSlots = [];
-  for(const b of mergeConsecutive(triageRaw)){
-    const timeLabel = fmtM(b.start)+'–'+fmtM(b.end);
-    const existing = triageSlots.find(t=>t.start===b.start&&t.end===b.end);
-    if(existing){ existing.agent = b.agent; }
-    else { triageSlots.push({ time: timeLabel, agent: b.agent, start: b.start, end: b.end }); }
-  }
-  triageSlots.sort((a,b)=>a.start-b.start);
-
-  return { coffeeBreaks, lunchBreaks, triageSlots, errors };
-}
-
-function confirmExcelImport(){
-  const raw = document.getElementById('excel-paste').value.trim();
-  if(!raw){ alert('Paste some data first.'); return; }
-  const { coffeeBreaks, lunchBreaks, triageSlots, errors } = parseExcelBreaks(raw);
-  const total = coffeeBreaks.length + lunchBreaks.length + triageSlots.length;
-  if(total===0){ alert('No break rows detected. Check your data format.'); return; }
-
-  const mode = document.querySelector('input[name="import-mode"]:checked').value;
-  if(mode==='replace'){
-    DATA.coffeeBreaks = coffeeBreaks;
-    DATA.lunchBreaks  = lunchBreaks;
-    // For triage: replace only the slots whose time windows appear in import; keep others
-    if(triageSlots.length){
-      const importedKeys = new Set(triageSlots.map(t=>t.start+'|'+t.end));
-      DATA.triageSlots = DATA.triageSlots.map(t=>{
-        const key = t.start+'|'+t.end;
-        const match = triageSlots.find(s=>s.start===t.start&&s.end===t.end);
-        return match ? {...t, agent: match.agent} : t;
-      });
-      // Add any triage slots that don't match existing windows
-      triageSlots.forEach(s=>{
-        if(!DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end)){
-          DATA.triageSlots.push(s);
-        }
-      });
-      DATA.triageSlots.sort((a,b)=>a.start-b.start);
-    }
-  } else {
-    const key = b => b.agent+'|'+b.start;
-    const existingCoffeeKeys = new Set(DATA.coffeeBreaks.map(key));
-    const existingLunchKeys  = new Set(DATA.lunchBreaks.map(key));
-    coffeeBreaks.forEach(b=>{ if(!existingCoffeeKeys.has(key(b))) DATA.coffeeBreaks.push(b); });
-    lunchBreaks .forEach(b=>{ if(!existingLunchKeys .has(key(b))) DATA.lunchBreaks .push(b); });
-    triageSlots.forEach(s=>{
-      const existing = DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end);
-      if(existing) existing.agent = s.agent;
-      else { DATA.triageSlots.push(s); DATA.triageSlots.sort((a,b)=>a.start-b.start); }
-    });
-  }
-
-  closeExcelModal();
-  render(); saveData();
-}
-
-// ═══════════════════════════════════════════════
-//  MODAL
-// ═══════════════════════════════════════════════
-function openModal(type){
-  activeModalType = type;
-  document.getElementById('m-type').value = type;
-  document.getElementById('add-modal').classList.add('open');
-}
-function closeModal(){
-  document.getElementById('add-modal').classList.remove('open');
-}
-function confirmAddBreak(){
-  const agent  = document.getElementById('m-agent').value;
-  const type   = document.getElementById('m-type').value;
-  const sVal   = document.getElementById('m-start').value;
-  const eVal   = document.getElementById('m-end').value;
-  if(!agent||!sVal||!eVal){ alert('Fill all fields.'); return; }
-  const [sh,sm] = sVal.split(':').map(Number);
-  const [eh,em] = eVal.split(':').map(Number);
-  const entry = { agent, start: sh*60+sm, end: eh*60+em };
-  if(type==='coffee') DATA.coffeeBreaks.push(entry);
-  else DATA.lunchBreaks.push(entry);
-  closeModal();
-  render(); saveData();
-}
-document.getElementById('m-type').addEventListener('change', function(){
-  activeModalType = this.value;
-});
-
-// ═══════════════════════════════════════════════
-//  CLOCK & BOOT
-// ═══════════════════════════════════════════════
-const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
-function updateClock(){
-  const n=new Date();
-  document.getElementById('clock').textContent = pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
-  document.getElementById('date-str').textContent = DAYS[n.getDay()]+', '+n.getDate()+' '+MONTHS[n.getMonth()]+' '+n.getFullYear();
-}
-setInterval(updateClock, 1000);
-updateClock();
-// re-render live indicators every 30s
-setInterval(render, 30000);
-
-// patch input watcher
-document.getElementById('patch-input').addEventListener('input', function(){
-  DATA.patchingAgent = this.value;
-  renderPatching(); renderMetrics(); saveData();
-});
-
-
-window.firebaseFirestore.onSnapshot(window.firebaseDataRef, (snap) => {
-  if (!snap.exists()) return;
-
-  DATA = snap.data();
-  render();
-});
-
-// boot straight into viewer
-isAdmin = false;
-applyMode();
-
-loadData();
+      setTimeout(() => {
+        el.textContent = 'Live · synced with Firebase';
 </script>
 </body>
 </html>
