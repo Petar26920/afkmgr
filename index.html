@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>AFK Manager v1.3</title>
+<title>AFK Manager v2</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -350,6 +350,32 @@ body::before{
 /* ─── EMPTY STATE ─── */
 .empty{font-size:12px;color:var(--muted);padding:8px 0;font-family:var(--mono);}
 
+/* ─── MY BREAK BUTTON (viewer mode) ─── */
+.my-break-btn{
+  background:var(--amber2);border:1px solid rgba(255,179,64,0.3);border-radius:6px;
+  padding:6px 12px;color:var(--amber);font-size:12px;font-weight:700;cursor:pointer;
+  font-family:var(--mono);transition:all 0.2s;letter-spacing:0.04em;
+}
+.my-break-btn:hover{background:rgba(255,179,64,0.25);transform:translateY(-1px);}
+
+/* ─── AGENT BREAK MODAL extras ─── */
+.abm-info{
+  font-size:11px;color:var(--muted);font-family:var(--mono);
+  background:var(--surface2);border-radius:6px;padding:8px 10px;
+  margin-bottom:14px;line-height:1.6;
+}
+.abm-info span{color:var(--amber);font-weight:700;}
+.abm-quota{
+  display:flex;align-items:center;gap:8px;margin-top:10px;
+  font-size:11px;font-family:var(--mono);
+}
+.quota-bar-wrap{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.quota-bar{height:100%;background:var(--amber);border-radius:3px;transition:width 0.3s;}
+.quota-bar.full{background:var(--red);}
+.abm-err{font-size:12px;color:var(--red);min-height:16px;margin-top:8px;font-family:var(--mono);}
+/* agent-added break: lock icon instead of del btn for viewers */
+.agent-lock{font-size:11px;color:var(--muted2);padding:2px 5px;}
+
 /* ─── VIEWER MODE: only metrics + timeline visible ─── */
 #app:not(.admin-mode) .admin-only  { display:none !important; }
 #app:not(.admin-mode) .bottom-bar  { display:none !important; }
@@ -376,7 +402,7 @@ body::before{
 <!-- ════════ ADMIN LOCK OVERLAY ════════ -->
 <div id="lock-screen">
   <div class="lock-card">
-    <div class="lock-logo">AFK · v1.3</div>
+    <div class="lock-logo">AFK · v2</div>
     <div class="lock-title">Admin <span>Access</span></div>
     <div class="lock-sub">Enter the admin password to unlock editing</div>
     <div id="pw-section">
@@ -447,11 +473,56 @@ body::before{
   </div>
 </div>
 
+<!-- ════════ AGENT BREAK MODAL ════════ -->
+<div class="modal-overlay" id="agent-break-modal">
+  <div class="modal" style="width:380px;">
+    <h2>☕ Book My Break</h2>
+    <p>Enter your name and password to book a comfort break.</p>
+    <div class="abm-info">
+      Max <span>30 min</span> total coffee breaks per day &nbsp;·&nbsp; Max <span>2 agents</span> at the same time
+    </div>
+    <div class="modal-field">
+      <label>Your name</label>
+      <select id="abm-agent"></select>
+    </div>
+    <div class="modal-field">
+      <label>Your password</label>
+      <input type="password" class="lock-input" id="abm-pw" placeholder="Password" style="margin-bottom:0;text-align:left;letter-spacing:normal;"/>
+    </div>
+    <div class="modal-row" style="margin-top:14px;">
+      <div class="modal-field">
+        <label>Start time</label>
+        <input type="time" id="abm-start" value="10:00" min="08:00" max="17:30"/>
+      </div>
+      <div class="modal-field">
+        <label>Duration</label>
+        <select id="abm-duration">
+          <option value="10">10 min</option>
+          <option value="15">15 min</option>
+          <option value="20">20 min</option>
+          <option value="25">25 min</option>
+          <option value="30">30 min</option>
+        </select>
+      </div>
+    </div>
+    <div class="abm-quota">
+      <span style="color:var(--muted);font-size:10px;">Quota used:</span>
+      <div class="quota-bar-wrap"><div class="quota-bar" id="abm-quota-bar" style="width:0%"></div></div>
+      <span id="abm-quota-label" style="color:var(--muted);font-size:10px;white-space:nowrap;">0 / 30 min</span>
+    </div>
+    <div class="abm-err" id="abm-err"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="abm-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="abm-ok-btn" style="background:var(--amber);color:#000;">☕ Book break</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ APP ════════ -->
 <div id="app">
   <div class="header">
     <div class="header-left">
-      <div class="logo-badge" style="font-family:var(--mono)">AFK v1.3</div>
+      <div class="logo-badge" style="font-family:var(--mono)">AFK v2</div>
       <div class="header-title">Manager <span>Wallboard</span></div>
     </div>
     <div class="header-right">
@@ -460,6 +531,7 @@ body::before{
         <div class="date-display" id="date-str"></div>
       </div>
       <div class="mode-badge viewer" id="mode-badge">VIEWER</div>
+      <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
       <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
     </div>
   </div>
@@ -641,6 +713,25 @@ const DEFAULT_DATA = {
   ],
   patchingAgent: 'Ivan Curcic',
   patchWeek: 'Week 20',
+  agentPasswords: {
+    'Bogdan Repanovic':        'bogdan123',
+    'Danica Pecanac':          'danica123',
+    'Ivan Curcic':             'ivan123',
+    'Sari Abboushi':           'sari123',
+    'Luka Martinovic':         'luka.m123',
+    'Aleksa Kostic':           'aleksa123',
+    'Bojan Pavlovic':          'bojan123',
+    'Stefan Krstic':           'stefan123',
+    'Luka Jovanovic':          'luka.j123',
+    'Milos Savic':             'milos123',
+    'Tamara Trakic':           'tamara123',
+    'Milica Stepanovic':       'milica123',
+    'Dimitrije Milosavljevic': 'dimitrije123',
+    'David Kostic':            'david123',
+    'Isidora Stevanovic':      'isidora123',
+    'Petar Spasic':            'petar123',
+    'Radislav Lazarevic':      'radislav123',
+  },
 };
 
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));   // start with defaults; Firestore overwrites on load
@@ -761,6 +852,88 @@ function applyMode(){
 }
 
 // ═══════════════════════════════════════════════
+//  AGENT BREAK MODAL
+// ═══════════════════════════════════════════════
+function openAgentBreakModal(){
+  // populate agent dropdown
+  const sel = document.getElementById('abm-agent');
+  sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
+  document.getElementById('abm-pw').value = '';
+  document.getElementById('abm-err').textContent = '';
+  updateAbmQuota();
+  document.getElementById('agent-break-modal').classList.add('open');
+}
+function closeAgentBreakModal(){
+  document.getElementById('agent-break-modal').classList.remove('open');
+}
+
+function agentCoffeeTotalMins(agentName){
+  return DATA.coffeeBreaks
+    .filter(b => b.agent === agentName)
+    .reduce((sum, b) => sum + (b.end - b.start), 0);
+}
+
+function updateAbmQuota(){
+  const agent = document.getElementById('abm-agent').value;
+  const used  = agentCoffeeTotalMins(agent);
+  const pct   = Math.min(100, (used / 30) * 100);
+  const bar   = document.getElementById('abm-quota-bar');
+  bar.style.width = pct + '%';
+  bar.className   = 'quota-bar' + (used >= 30 ? ' full' : '');
+  document.getElementById('abm-quota-label').textContent = `${used} / 30 min`;
+}
+
+function confirmAgentBreak(){
+  const agent    = document.getElementById('abm-agent').value;
+  const pw       = document.getElementById('abm-pw').value;
+  const startVal = document.getElementById('abm-start').value;
+  const durMins  = parseInt(document.getElementById('abm-duration').value);
+  const errEl    = document.getElementById('abm-err');
+  errEl.textContent = '';
+
+  // 1. Password check
+  const passwords = DATA.agentPasswords || {};
+  if(!passwords[agent] || passwords[agent] !== pw){
+    const inp = document.getElementById('abm-pw');
+    inp.classList.add('error');
+    setTimeout(()=>inp.classList.remove('error'), 500);
+    errEl.textContent = '✕ Incorrect password.';
+    return;
+  }
+
+  const [sh, sm] = startVal.split(':').map(Number);
+  const start    = sh * 60 + sm;
+  const end      = start + durMins;
+
+  // 2. Max 30 min total quota
+  const alreadyUsed = agentCoffeeTotalMins(agent);
+  if(alreadyUsed + durMins > 30){
+    errEl.textContent = `✕ You've used ${alreadyUsed} min. Adding ${durMins} min would exceed the 30-min daily limit.`;
+    return;
+  }
+
+  // 3. Max 2 agents overlapping at the same time
+  const overlapping = DATA.coffeeBreaks.filter(b => b.start < end && b.end > start);
+  if(overlapping.length >= 2){
+    errEl.textContent = '✕ 2 agents are already on break during that slot. Please choose a different time.';
+    return;
+  }
+
+  // 4. No duplicate booking for the same agent in same window
+  const duplicate = DATA.coffeeBreaks.find(b => b.agent === agent && b.start < end && b.end > start);
+  if(duplicate){
+    errEl.textContent = '✕ You already have a break overlapping this time slot.';
+    return;
+  }
+
+  DATA.coffeeBreaks.push({ agent, start, end, agentAdded: true });
+  DATA.coffeeBreaks.sort((a,b)=>a.start-b.start);
+  closeAgentBreakModal();
+  render();
+  saveData();
+}
+
+// ═══════════════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════════════
 const AV = [
@@ -808,14 +981,17 @@ function renderBreaks(containerId, breaks, type){
     const active = now>=b.start && now<b.end;
     const badgeClass = active ? 'badge-now' : (type==='coffee'?'badge-coffee':'badge-lunch');
     const badgeLabel = active ? '● NOW' : fmtM(b.start)+'–'+fmtM(b.end);
+    const lockIcon = b.agentAdded ? `<span class="agent-lock" title="Agent-added · only admin can remove">🔒</span>` : '';
     return `<div class="break-row" data-type="${type}" data-idx="${i}">
       <div class="avatar" style="${avStyle(b.agent)}">${initials(b.agent)}</div>
-      <span class="break-name-display break-name">${b.agent}</span>
+      <span class="break-name-display break-name">${b.agent}${b.agentAdded?'<span style="font-size:9px;color:var(--muted);margin-left:4px;">self</span>':''}</span>
       <input class="edit-field name-field" value="${b.agent}" data-action="break-name" data-type="${type}" data-idx="${i}" />
       <input class="edit-field" type="time" value="${fmtM(b.start)}" data-action="break-start" data-type="${type}" data-idx="${i}" />
       <input class="edit-field" type="time" value="${fmtM(b.end)}" data-action="break-end" data-type="${type}" data-idx="${i}" />
       <span class="badge ${badgeClass}">${badgeLabel}</span>
-      <button class="del-btn" data-action="break-delete" data-type="${type}" data-idx="${i}" title="Remove">✕</button>
+      ${isAdmin
+        ? `<button class="del-btn" data-action="break-delete" data-type="${type}" data-idx="${i}" title="Remove">✕</button>`
+        : lockIcon}
     </div>`;
   }).join('');
 }
@@ -1121,6 +1297,15 @@ document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key=
 
 // Admin toggle button
 document.getElementById('admin-btn').addEventListener('click', () => { isAdmin ? lockApp() : showAdminLogin(); });
+
+// My Break button
+document.getElementById('my-break-btn').addEventListener('click', openAgentBreakModal);
+
+// Agent break modal
+document.getElementById('abm-cancel-btn').addEventListener('click', closeAgentBreakModal);
+document.getElementById('abm-ok-btn').addEventListener('click', confirmAgentBreak);
+document.getElementById('abm-agent').addEventListener('change', updateAbmQuota);
+document.getElementById('abm-pw').addEventListener('keydown', e => { if(e.key==='Enter') confirmAgentBreak(); });
 
 // Save button
 document.getElementById('save-btn').addEventListener('click', saveData);
