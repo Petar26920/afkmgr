@@ -397,6 +397,9 @@ body::before{
 .triage-strip-wrap{
   display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);
 }
+#triage-strip-card{
+  margin-top: 20px;
+}
 .ts-slot{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:7px 4px 6px;border-right:1px solid var(--border);transition:background 0.2s;
@@ -1279,7 +1282,7 @@ function renderMetrics(){
   const triN = DATA.triageSlots.find(t=>now>=t.start&&now<t.end);
   document.getElementById('m-afk').textContent     = afk.length;
   document.getElementById('m-afk-sub').textContent = afk.length
-    ? afk.slice(0,2).map(n=>n.split(' ')[0]).join(', ') : 'none right now';
+    ? afk.slice(0,5).map(n=>n.split(' ')[0]).join(', ') : 'none right now';
   document.getElementById('m-triage').textContent   = triN ? triN.agent : '—';
   document.getElementById('m-patch-val').textContent= DATA.patchingAgent || '—';
   document.getElementById('m-patch-week-sub').textContent = DATA.patchWeek || 'this week';
