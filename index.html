@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>AFK Manager v1.3</title>
+<title>AFK Manager v2</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -421,7 +421,7 @@ body::before{
 <!-- ════════ ADMIN LOCK OVERLAY ════════ -->
 <div id="lock-screen">
   <div class="lock-card">
-    <div class="lock-logo">AFK · v1.3</div>
+    <div class="lock-logo">AFK · v2</div>
     <div class="lock-title">Admin <span>Access</span></div>
     <div class="lock-sub">Sign in with your admin Firebase account</div>
     <div id="pw-section">
@@ -542,7 +542,7 @@ body::before{
 <div id="app">
   <div class="header">
     <div class="header-left">
-      <div class="logo-badge" style="font-family:var(--mono)">AFK v1.3</div>
+      <div class="logo-badge" style="font-family:var(--mono)">AFK v2</div>
       <div class="header-title">Manager <span>Wallboard</span></div>
     </div>
     <div class="header-right">
@@ -571,7 +571,7 @@ body::before{
       </div>
       <div class="metric m-green">
         <div class="metric-label">On triage now</div>
-        <div class="metric-val green" id="m-triage">—</div>
+        <div class="metric-val sm green" id="m-triage">—</div>
         <div class="metric-sub">handling queue</div>
       </div>
       <div class="metric m-purple">
@@ -1138,7 +1138,7 @@ function renderMetrics(){
   document.getElementById('m-afk').textContent     = afk.length;
   document.getElementById('m-afk-sub').textContent = afk.length
     ? afk.slice(0,2).map(n=>n.split(' ')[0]).join(', ') : 'none right now';
-  document.getElementById('m-triage').textContent   = triN ? triN.agent.split(' ')[0] : '—';
+  document.getElementById('m-triage').textContent   = triN ? triN.agent : '—';
   document.getElementById('m-patch-val').textContent= DATA.patchingAgent || '—';
   document.getElementById('m-patch-week-sub').textContent = DATA.patchWeek || 'this week';
   document.getElementById('m-total').textContent    = DATA.agents.length;
