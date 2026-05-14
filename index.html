@@ -398,7 +398,8 @@ body::before{
   display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);
 }
 #triage-strip-card{
-  margin-top: 20px;
+  margin-top: 10px;
+ 
 }
 .ts-slot{
   flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -428,7 +429,7 @@ body::before{
 #app:not(.admin-mode) .icon-btn    { display:none !important; }
 #app:not(.admin-mode) .grid2       { display:flex; flex-direction:column; gap:0; }
 #app:not(.admin-mode) .admin-mode-labels { display:none !important; }
-#app:not(.admin-mode) .metrics     { gap:10px; margin-bottom:14px; }
+#app:not(.admin-mode) .metrics     { gap:10px; margin-bottom:0px; }
 #app:not(.admin-mode) .metric      { padding:14px 18px; }
 #app:not(.admin-mode) .metric-val  { font-size:32px; }
 #app:not(.admin-mode) .metric-val.sm{ font-size:18px; padding-top:6px; }
@@ -701,8 +702,8 @@ body::before{
 <!-- TRIAGE STRIP — visible to all -->
     <div class="card" id="triage-strip-card">
       <div class="card-header" style="margin-bottom:8px;">
-        <div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div>
-        <span id="strip-now-badge" style="font-size:10px;background:var(--green2);color:var(--green);border-radius:4px;padding:2px 8px;font-weight:700;font-family:var(--mono);letter-spacing:0.04em;"></span>
+        <!-- <div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div>
+        <span id="strip-now-badge" style="font-size:10px;background:var(--green2);color:var(--green);border-radius:4px;padding:2px 8px;font-weight:700;font-family:var(--mono);letter-spacing:0.04em;"></span> -->
       </div>
       <div class="triage-strip-wrap" id="triage-strip"></div>
     </div>
