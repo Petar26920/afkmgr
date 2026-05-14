@@ -380,10 +380,10 @@ body::before{
     <div class="lock-title">Admin <span>Access</span></div>
     <div class="lock-sub">Enter the admin password to unlock editing</div>
     <div id="pw-section">
-      <input type="password" class="lock-input" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')doAdminLogin()"/>
+      <input type="password" class="lock-input" id="pw-input" placeholder="Password"/>
     </div>
-    <button class="lock-btn" onclick="doAdminLogin()">Unlock Admin</button>
-    <button class="lock-btn viewer" style="margin-top:8px;" onclick="cancelAdminLogin()">← Back to viewer</button>
+    <button class="lock-btn" id="lock-unlock-btn">Unlock Admin</button>
+    <button class="lock-btn viewer" style="margin-top:8px;" id="lock-back-btn">← Back to viewer</button>
     <div class="lock-err" id="lock-err"></div>
   </div>
 </div>
@@ -415,8 +415,8 @@ body::before{
       </div>
     </div>
     <div class="modal-actions">
-      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
-      <button class="modal-ok" onclick="confirmAddBreak()">Add break</button>
+      <button class="modal-cancel" id="modal-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="modal-ok-btn">Add break</button>
     </div>
   </div>
 </div>
@@ -438,11 +438,11 @@ body::before{
         </label>
       </div>
     </div>
-    <textarea id="excel-paste" placeholder="Paste Excel data here (Ctrl+V)…" style="width:100%;height:200px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;" onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border2)'"></textarea>
+    <textarea id="excel-paste" placeholder="Paste Excel data here (Ctrl+V)…" style="width:100%;height:200px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>
     <div id="excel-preview" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono);min-height:18px;"></div>
     <div class="modal-actions">
-      <button class="modal-cancel" onclick="closeExcelModal()">Cancel</button>
-      <button class="modal-ok" onclick="confirmExcelImport()" style="background:var(--green);color:#000;">✓ Import breaks</button>
+      <button class="modal-cancel" id="excel-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="excel-ok-btn" style="background:var(--green);color:#000;">✓ Import breaks</button>
     </div>
   </div>
 </div>
@@ -460,7 +460,7 @@ body::before{
         <div class="date-display" id="date-str"></div>
       </div>
       <div class="mode-badge viewer" id="mode-badge">VIEWER</div>
-      <button class="icon-btn" id="admin-btn" onclick="isAdmin?lockApp():showAdminLogin()" style="display:block!important;">🔐 Admin</button>
+      <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
     </div>
   </div>
 
@@ -495,8 +495,8 @@ body::before{
         <div class="card-header">
           <div class="card-title"><span class="pip pip-amber"></span>Coffee breaks</div>
           <div style="display:flex;gap:6px;">
-            <button class="add-btn" onclick="openExcelModal()" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);">📋 Import Excel</button>
-            <button class="add-btn" onclick="openModal('coffee')">+ Add</button>
+            <button class="add-btn" id="import-excel-btn" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);">📋 Import Excel</button>
+            <button class="add-btn" id="add-coffee-btn">+ Add</button>
           </div>
         </div>
         <div id="coffee-list"></div>
@@ -504,7 +504,7 @@ body::before{
       <div class="card admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-green"></span>Lunch breaks</div>
-          <button class="add-btn" onclick="openModal('lunch')">+ Add</button>
+          <button class="add-btn" id="add-lunch-btn">+ Add</button>
         </div>
         <div id="lunch-list"></div>
       </div>
@@ -539,7 +539,7 @@ body::before{
         <div class="patching-section">
           <div class="patching-week" id="patch-week-badge">Week 20</div>
           <span class="patch-agent-display" id="patch-display">—</span>
-          <input class="patch-input" id="patch-input" type="text" placeholder="Agent name" oninput="DATA.patchingAgent=this.value;renderMetrics();"/>
+          <input class="patch-input" id="patch-input" type="text" placeholder="Agent name" />
         </div>
       </div>
       <div class="card admin-only">
@@ -555,23 +555,43 @@ body::before{
           <div class="card-title"><span class="pip pip-blue"></span>Agent roster</div>
         </div>
         <div class="agents-grid" id="agents-grid"></div>
-        <button class="add-agent-btn" onclick="addAgent()">+ Add agent</button>
+        <button class="add-agent-btn" id="add-agent-btn">+ Add agent</button>
       </div>
     </div>
 
     <!-- BOTTOM BAR -->
     <div class="bottom-bar">
       <span id="last-update">Live · updates every 30s</span>
-      <button class="save-btn" onclick="saveData()">💾 Save changes</button>
+      <button class="save-btn" id="save-btn">💾 Save changes</button>
     </div>
   </div>
 </div>
 
-<script>
+<!-- ════════ FIREBASE SDK ════════ -->
+<script type="module">
+import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ═══════════════════════════════════════════════
+//  FIREBASE CONFIG
+// ═══════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            'AIzaSyD8yIOIKJeeYkuLQYTo64S_LrfUhRRvW0Q',
+  authDomain:        'afk-manager-31a3c.firebaseapp.com',
+  projectId:         'afk-manager-31a3c',
+  storageBucket:     'afk-manager-31a3c.firebasestorage.app',
+  messagingSenderId: '964360625277',
+  appId:             '1:964360625277:web:10a6772622bca912f3a514',
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db    = getFirestore(fbApp);
+const DOC_REF = doc(db, 'afk', 'state');   // single document for all state
+
 // ═══════════════════════════════════════════════
 //  DATA
 // ═══════════════════════════════════════════════
-const STORAGE_KEY = 'afk_manager_v13';
 const PASSWORD    = 'Gamma1255';
 
 const DEFAULT_DATA = {
@@ -623,21 +643,81 @@ const DEFAULT_DATA = {
   patchWeek: 'Week 20',
 };
 
-let DATA = loadData();
+let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));   // start with defaults; Firestore overwrites on load
 let isAdmin = false;
 let activeModalType = 'coffee';
+let _firestoreAvailable = true;  // flips to false if Firebase fails
 
-function loadData(){
+// ─── LOAD from Firestore (called once at boot) ───
+async function loadData(){
   try {
-    const s = localStorage.getItem(STORAGE_KEY);
-    return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT_DATA));
-  } catch(e) { return JSON.parse(JSON.stringify(DEFAULT_DATA)); }
+    const snap = await getDoc(DOC_REF);
+    if(snap.exists()){
+      const d = snap.data();
+      // Merge carefully so missing keys fall back to DEFAULT_DATA
+      DATA = {
+        agents:        d.agents        ?? DEFAULT_DATA.agents,
+        coffeeBreaks:  d.coffeeBreaks  ?? DEFAULT_DATA.coffeeBreaks,
+        lunchBreaks:   d.lunchBreaks   ?? DEFAULT_DATA.lunchBreaks,
+        triageSlots:   d.triageSlots   ?? DEFAULT_DATA.triageSlots,
+        rules:         d.rules         ?? DEFAULT_DATA.rules,
+        patchingAgent: d.patchingAgent ?? DEFAULT_DATA.patchingAgent,
+        patchWeek:     d.patchWeek     ?? DEFAULT_DATA.patchWeek,
+      };
+    } else {
+      // First run — push defaults to Firestore
+      await setDoc(DOC_REF, DEFAULT_DATA);
+    }
+  } catch(e) {
+    console.warn('Firebase unavailable, running on local defaults:', e.message);
+    _firestoreAvailable = false;
+  }
+  render();
+  setStatusBar();
 }
-function saveData(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(DATA));
+
+// ─── REAL-TIME listener (keeps all open tabs in sync) ───
+function attachRealtimeListener(){
+  if(!_firestoreAvailable) return;
+  onSnapshot(DOC_REF, (snap) => {
+    if(!snap.exists()) return;
+    const d = snap.data();
+    DATA = {
+      agents:        d.agents        ?? DEFAULT_DATA.agents,
+      coffeeBreaks:  d.coffeeBreaks  ?? DEFAULT_DATA.coffeeBreaks,
+      lunchBreaks:   d.lunchBreaks   ?? DEFAULT_DATA.lunchBreaks,
+      triageSlots:   d.triageSlots   ?? DEFAULT_DATA.triageSlots,
+      rules:         d.rules         ?? DEFAULT_DATA.rules,
+      patchingAgent: d.patchingAgent ?? DEFAULT_DATA.patchingAgent,
+      patchWeek:     d.patchWeek     ?? DEFAULT_DATA.patchWeek,
+    };
+    render();
+  }, (err) => {
+    console.warn('Realtime listener error:', err.message);
+  });
+}
+
+// ─── SAVE to Firestore ───
+async function saveData(){
   const el = document.getElementById('last-update');
-  el.textContent = 'Saved · ' + new Date().toLocaleTimeString();
-  setTimeout(()=>{ el.textContent = 'Live · auto-saves on change'; }, 2000);
+  if(!_firestoreAvailable){
+    el.textContent = '⚠ Offline — changes not saved';
+    return;
+  }
+  try {
+    await setDoc(DOC_REF, DATA);
+    el.textContent = 'Saved · ' + new Date().toLocaleTimeString();
+    setTimeout(()=>{ setStatusBar(); }, 3000);
+  } catch(e) {
+    el.textContent = '⚠ Save failed: ' + e.message;
+    console.error('Firestore save error:', e);
+  }
+}
+
+function setStatusBar(){
+  const el = document.getElementById('last-update');
+  if(!el) return;
+  el.textContent = _firestoreAvailable ? 'Live · synced via Firebase' : '⚠ Offline · using default data';
 }
 
 // ═══════════════════════════════════════════════
@@ -731,11 +811,11 @@ function renderBreaks(containerId, breaks, type){
     return `<div class="break-row" data-type="${type}" data-idx="${i}">
       <div class="avatar" style="${avStyle(b.agent)}">${initials(b.agent)}</div>
       <span class="break-name-display break-name">${b.agent}</span>
-      <input class="edit-field name-field" value="${b.agent}" onchange="updateBreak('${type}',${i},'agent',this.value)" />
-      <input class="edit-field" type="time" value="${fmtM(b.start)}" onchange="updateBreakTime('${type}',${i},'start',this.value)" />
-      <input class="edit-field" type="time" value="${fmtM(b.end)}" onchange="updateBreakTime('${type}',${i},'end',this.value)" />
+      <input class="edit-field name-field" value="${b.agent}" data-action="break-name" data-type="${type}" data-idx="${i}" />
+      <input class="edit-field" type="time" value="${fmtM(b.start)}" data-action="break-start" data-type="${type}" data-idx="${i}" />
+      <input class="edit-field" type="time" value="${fmtM(b.end)}" data-action="break-end" data-type="${type}" data-idx="${i}" />
       <span class="badge ${badgeClass}">${badgeLabel}</span>
-      <button class="del-btn" onclick="deleteBreak('${type}',${i})" title="Remove">✕</button>
+      <button class="del-btn" data-action="break-delete" data-type="${type}" data-idx="${i}" title="Remove">✕</button>
     </div>`;
   }).join('');
 }
@@ -763,7 +843,7 @@ function renderTriage(){
     return `<div class="triage-slot ${active?'now':''}">
       <div class="triage-time">${t.time}</div>
       <div class="triage-agent triage-agent-display">${t.agent}</div>
-      <input class="triage-input triage-edit" value="${t.agent}" onchange="DATA.triageSlots[${i}].agent=this.value;renderMetrics();saveData();" />
+      <input class="triage-input triage-edit" value="${t.agent}" data-action="triage-agent" data-idx="${i}" />
     </div>`;
   }).join('');
 }
@@ -780,8 +860,8 @@ function renderRules(){
     <div class="rule-item">
       <span class="rule-num">0${i+1}</span>
       <span class="rule-text">${r}</span>
-      <input class="rule-input" value="${r}" onchange="DATA.rules[${i}]=this.value;saveData();" />
-      <button class="del-btn" onclick="DATA.rules.splice(${i},1);render();saveData();" title="Remove">✕</button>
+      <input class="rule-input" value="${r}" data-action="rule-edit" data-idx="${i}" />
+      <button class="del-btn" data-action="rule-delete" data-idx="${i}" title="Remove">✕</button>
     </div>`).join('');
 }
 
@@ -790,8 +870,8 @@ function renderAgents(){
     <div class="agent-item">
       <div class="avatar" style="${avStyle(a)};width:24px;height:24px;font-size:9px;">${initials(a)}</div>
       <span class="agent-item-name">${a}</span>
-      <input class="agent-name-input" value="${a}" onchange="DATA.agents[${i}]=this.value;render();saveData();" />
-      <button class="del-btn" onclick="removeAgent(${i})" title="Remove">✕</button>
+      <input class="agent-name-input" value="${a}" data-action="agent-name" data-idx="${i}" />
+      <button class="del-btn" data-action="agent-delete" data-idx="${i}" title="Remove">✕</button>
     </div>`).join('');
   document.getElementById('m-total').textContent = DATA.agents.length;
 }
@@ -857,9 +937,6 @@ function closeExcelModal(){
 }
 
 // Live preview as user types/pastes
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('excel-paste').addEventListener('input', previewExcel);
-});
 function previewExcel(){
   const raw = document.getElementById('excel-paste').value.trim();
   if(!raw){ document.getElementById('excel-preview').textContent=''; return; }
@@ -1032,19 +1109,97 @@ function updateClock(){
 }
 setInterval(updateClock, 1000);
 updateClock();
-// re-render live indicators every 30s
 setInterval(render, 30000);
 
-// patch input watcher
+// ═══════════════════════════════════════════════
+//  STATIC ELEMENT EVENT WIRING (all in one place)
+// ═══════════════════════════════════════════════
+// Lock screen
+document.getElementById('lock-unlock-btn').addEventListener('click', doAdminLogin);
+document.getElementById('lock-back-btn').addEventListener('click', cancelAdminLogin);
+document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doAdminLogin(); });
+
+// Admin toggle button
+document.getElementById('admin-btn').addEventListener('click', () => { isAdmin ? lockApp() : showAdminLogin(); });
+
+// Save button
+document.getElementById('save-btn').addEventListener('click', saveData);
+
+// Add break buttons
+document.getElementById('add-coffee-btn').addEventListener('click', () => openModal('coffee'));
+document.getElementById('add-lunch-btn').addEventListener('click', () => openModal('lunch'));
+document.getElementById('import-excel-btn').addEventListener('click', openExcelModal);
+
+// Add break modal
+document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+document.getElementById('modal-ok-btn').addEventListener('click', confirmAddBreak);
+
+// Excel modal
+document.getElementById('excel-cancel-btn').addEventListener('click', closeExcelModal);
+document.getElementById('excel-ok-btn').addEventListener('click', confirmExcelImport);
+document.getElementById('excel-paste').addEventListener('input', previewExcel);
+document.getElementById('excel-paste').addEventListener('focus', function(){ this.style.borderColor='var(--blue)'; });
+document.getElementById('excel-paste').addEventListener('blur',  function(){ this.style.borderColor='var(--border2)'; });
+
+// Add agent button
+document.getElementById('add-agent-btn').addEventListener('click', addAgent);
+
+// Patching agent input
 document.getElementById('patch-input').addEventListener('input', function(){
   DATA.patchingAgent = this.value;
-  renderPatching(); renderMetrics(); saveData();
+  renderMetrics();
+  saveData();
 });
 
-// boot straight into viewer
+// ─── DELEGATED EVENTS for dynamically rendered rows ───
+// Handles all data-action elements inside coffee-list, lunch-list, triage-grid, rules-list, agents-grid
+document.getElementById('app').addEventListener('change', e => {
+  const el  = e.target;
+  const act = el.dataset.action;
+  const idx = parseInt(el.dataset.idx);
+  if(!act) return;
+
+  if(act==='break-name'){
+    updateBreak(el.dataset.type, idx, 'agent', el.value);
+  } else if(act==='break-start'){
+    updateBreakTime(el.dataset.type, idx, 'start', el.value);
+  } else if(act==='break-end'){
+    updateBreakTime(el.dataset.type, idx, 'end', el.value);
+  } else if(act==='triage-agent'){
+    DATA.triageSlots[idx].agent = el.value;
+    renderMetrics(); saveData();
+  } else if(act==='rule-edit'){
+    DATA.rules[idx] = el.value;
+    saveData();
+  } else if(act==='agent-name'){
+    DATA.agents[idx] = el.value;
+    render(); saveData();
+  }
+});
+
+document.getElementById('app').addEventListener('click', e => {
+  const el  = e.target.closest('[data-action]');
+  if(!el) return;
+  const act = el.dataset.action;
+  const idx = parseInt(el.dataset.idx);
+
+  if(act==='break-delete'){
+    deleteBreak(el.dataset.type, idx);
+  } else if(act==='rule-delete'){
+    DATA.rules.splice(idx, 1);
+    render(); saveData();
+  } else if(act==='agent-delete'){
+    removeAgent(idx);
+  }
+});
+
+// ═══════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════
 isAdmin = false;
 applyMode();
 render();
+loadData().then(() => attachRealtimeListener());
 </script>
 </body>
 </html>
