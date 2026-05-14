@@ -391,23 +391,46 @@ body::before{
 .quota-bar{height:100%;background:var(--amber);border-radius:3px;transition:width 0.3s;}
 .quota-bar.full{background:var(--red);}
 .abm-err{font-size:12px;color:var(--red);min-height:16px;margin-top:8px;font-family:var(--mono);}
-/* agent-added break: lock icon instead of del btn for viewers */
 .agent-lock{font-size:11px;color:var(--muted2);padding:2px 5px;}
 
-/* ─── VIEWER MODE: only metrics + timeline visible ─── */
+/* ─── TRIAGE STRIP ─── */
+.triage-strip-wrap{
+  display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);
+}
+.ts-slot{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:7px 4px 6px;border-right:1px solid var(--border);transition:background 0.2s;
+}
+.ts-slot:last-child{border-right:none;}
+.ts-slot.ts-now{background:var(--green2);border-top:2px solid var(--green);}
+.ts-slot.ts-past{opacity:0.4;}
+.ts-slot-time{font-size:9px;color:var(--muted);font-family:var(--mono);margin-bottom:3px;}
+.ts-slot.ts-now .ts-slot-time{color:var(--green);}
+.ts-slot-name{font-size:11px;font-weight:600;color:var(--text);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:68px;}
+.ts-slot.ts-now .ts-slot-name{color:var(--green);font-weight:700;}
+.ts-now-dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-bottom:3px;animation:pulse 1.5s infinite;}
+
+/* ─── ON LEAVE PANEL ─── */
+.leave-panel{
+  width:140px;flex-shrink:0;display:flex;flex-direction:column;
+}
+.leave-entry{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);}
+.leave-entry:last-child{border-bottom:none;}
+.leave-entry-name{font-size:11px;font-weight:600;line-height:1.2;}
+.leave-entry-note{font-size:9px;color:var(--muted);font-family:var(--mono);line-height:1.2;}
+
+/* ─── VIEWER MODE ─── */
 #app:not(.admin-mode) .admin-only  { display:none !important; }
 #app:not(.admin-mode) .bottom-bar  { display:none !important; }
 #app:not(.admin-mode) .icon-btn    { display:none !important; }
 #app:not(.admin-mode) .grid2       { display:flex; flex-direction:column; gap:0; }
 #app:not(.admin-mode) .admin-mode-labels { display:none !important; }
-/* bigger, bolder metrics for wallboard */
 #app:not(.admin-mode) .metrics     { gap:10px; margin-bottom:14px; }
 #app:not(.admin-mode) .metric      { padding:14px 18px; }
 #app:not(.admin-mode) .metric-val  { font-size:32px; }
 #app:not(.admin-mode) .metric-val.sm{ font-size:18px; padding-top:6px; }
 #app:not(.admin-mode) .metric-label{ font-size:10px; margin-bottom:8px; }
 #app:not(.admin-mode) .metric-sub  { font-size:11px; margin-top:5px; }
-/* compact timeline tracks */
 #app:not(.admin-mode) .tl-track   { height:14px; border-radius:4px; }
 #app:not(.admin-mode) .tl-name    { font-size:10px; width:130px; }
 #app:not(.admin-mode) .tl-row     { margin-bottom:3px; }
@@ -418,6 +441,7 @@ body::before{
 #app:not(.admin-mode) .header     { padding:10px 18px; }
 #app:not(.admin-mode) .clock-display { font-size:16px; }
 #app:not(.admin-mode) .card-header { margin-bottom:8px; }
+#app:not(.admin-mode) .leave-panel { width:130px; }
 </style>
 </head>
 <body>
@@ -542,6 +566,26 @@ body::before{
   </div>
 </div>
 
+<!-- ════════ ON LEAVE MODAL ════════ -->
+<div class="modal-overlay" id="leave-modal">
+  <div class="modal" style="width:340px;">
+    <h2>Mark on leave</h2>
+    <p>Agent will appear on the wallboard as away.</p>
+    <div class="modal-field">
+      <label>Agent</label>
+      <select id="lv-agent"></select>
+    </div>
+    <div class="modal-field">
+      <label>Note <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optional)</span></label>
+      <input type="text" id="lv-note" placeholder="e.g. Annual leave, Sick leave…" maxlength="40"/>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="lv-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="lv-ok-btn" style="background:var(--purple);">Mark on leave</button>
+    </div>
+  </div>
+</div>
+
 <!-- ════════ APP ════════ -->
 <div id="app">
   <div class="header">
@@ -585,8 +629,11 @@ body::before{
       </div>
     </div>
 
-    <!-- BREAKS (admin only) -->
+    
+    <!-- GRID -->
     <div class="grid2">
+
+      <!-- BREAKS (admin only) -->
       <div class="card admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-amber"></span>Coffee breaks</div>
@@ -597,6 +644,7 @@ body::before{
         </div>
         <div id="coffee-list"></div>
       </div>
+
       <div class="card admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-green"></span>Lunch breaks</div>
@@ -605,27 +653,56 @@ body::before{
         <div id="lunch-list"></div>
       </div>
 
-      <!-- TIMELINE — visible to everyone -->
-      <div class="card full" id="timeline-card">
+      <!-- ON LEAVE (admin only) -->
+      <div class="card admin-only" style="grid-column:1/-1;">
         <div class="card-header">
-          <div class="card-title"><span class="pip pip-blue"></span>Break timeline · 08:00 – 18:00</div>
+          <div class="card-title"><span class="pip pip-purple"></span>On leave</div>
+          <button class="add-btn" id="add-leave-btn">+ Add</button>
         </div>
-        <div id="tl-wrap"></div>
-        <div class="tl-times"><span>08:00</span><span>10:00</span><span>12:00</span><span>14:00</span><span>16:00</span><span>18:00</span></div>
-        <div class="tl-legend">
-          <span><span class="leg-box" style="background:var(--amber)"></span>Coffee</span>
-          <span><span class="leg-box" style="background:var(--green)"></span>Lunch</span>
-          <span><span class="leg-box" style="background:var(--red)"></span>Now</span>
-        </div>
+        <div id="leave-list"></div>
       </div>
 
-      <!-- TRIAGE (admin only) -->
+      <!-- TIMELINE + LEAVE PANEL — visible to everyone -->
+      <div style="display:flex;gap:14px;grid-column:1/-1;">
+
+        <div class="card" style="flex:1;min-width:0;" id="timeline-card">
+          <div class="card-header">
+            <div class="card-title"><span class="pip pip-blue"></span>Break timeline · 08:00 – 18:00</div>
+          </div>
+          <div id="tl-wrap"></div>
+          <div class="tl-times"><span>08:00</span><span>10:00</span><span>12:00</span><span>14:00</span><span>16:00</span><span>18:00</span></div>
+          <div class="tl-legend">
+            <span><span class="leg-box" style="background:var(--amber)"></span>Coffee</span>
+            <span><span class="leg-box" style="background:var(--green)"></span>Lunch</span>
+            <span><span class="leg-box" style="background:var(--red)"></span>Now</span>
+          </div>
+        </div>
+
+        <!-- ON LEAVE PANEL — visible to everyone -->
+        <div class="card leave-panel" id="leave-panel">
+          <div class="card-header" style="margin-bottom:8px;">
+            <div class="card-title"><span class="pip pip-purple"></span>On leave</div>
+          </div>
+          <div id="leave-panel-list" style="display:flex;flex-direction:column;gap:6px;flex:1;"></div>
+        </div>
+
+      </div><!-- end timeline+leave wrapper -->
+
+      <!-- TRIAGE FULL (admin only) -->
       <div class="card full admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div>
         </div>
         <div class="triage-grid" id="triage-grid"></div>
       </div>
+<!-- TRIAGE STRIP — visible to all -->
+    <div class="card" id="triage-strip-card">
+      <div class="card-header" style="margin-bottom:8px;">
+        <div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div>
+        <span id="strip-now-badge" style="font-size:10px;background:var(--green2);color:var(--green);border-radius:4px;padding:2px 8px;font-weight:700;font-family:var(--mono);letter-spacing:0.04em;"></span>
+      </div>
+      <div class="triage-strip-wrap" id="triage-strip"></div>
+    </div>
 
       <!-- PATCHING + RULES (admin only) -->
       <div class="card admin-only">
@@ -650,7 +727,6 @@ body::before{
         <div class="card-header">
           <div class="card-title"><span class="pip pip-blue"></span>Agent roster &amp; passwords</div>
         </div>
-        <!-- column labels — only visible in admin mode -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;" class="admin-mode-labels">
           <div style="display:flex;gap:7px;align-items:center;padding:0 0 4px;border-bottom:1px solid var(--border2);">
             <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:24px;text-align:center;">Av</span>
@@ -668,7 +744,8 @@ body::before{
         <div class="agents-grid" id="agents-grid"></div>
         <button class="add-agent-btn" id="add-agent-btn">+ Add agent</button>
       </div>
-    </div>
+
+    </div><!-- end grid2 -->
 
     <!-- BOTTOM BAR -->
     <div class="bottom-bar">
@@ -686,9 +763,6 @@ import { getFirestore, doc, getDoc, setDoc, onSnapshot }
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-// ═══════════════════════════════════════════════
-//  FIREBASE CONFIG
-// ═══════════════════════════════════════════════
 const firebaseConfig = {
   apiKey:            'AIzaSyD8yIOIKJeeYkuLQYTo64S_LrfUhRRvW0Q',
   authDomain:        'afk-manager-31a3c.firebaseapp.com',
@@ -707,8 +781,6 @@ const DOC_REF = doc(db, 'afk', 'state');
 //  DATA
 // ═══════════════════════════════════════════════
 const DEFAULT_DATA = {
-//  DATA
-// ═══════════════════════════════════════════════
   agents: [
     'Bogdan Repanovic','Danica Pecanac','Ivan Curcic','Sari Abboushi',
     'Luka Martinovic','Aleksa Kostic','Bojan Pavlovic','Stefan Krstic',
@@ -774,21 +846,21 @@ const DEFAULT_DATA = {
     'Petar Spasic':            'petar123',
     'Radislav Lazarevic':      'radislav123',
   },
+  onLeave: [],
 };
 
-let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));   // start with defaults; Firestore overwrites on load
+let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let isAdmin = false;
 let activeModalType = 'coffee';
-let _firestoreAvailable = true;  // flips to false if Firebase fails
+let _firestoreAvailable = true;
 
-// ─── LOAD from Firestore (called once at boot) ───
+// ─── LOAD ───
 async function loadData(){
   try {
     const snap = await getDoc(DOC_REF);
     if(snap.exists()){
       const d = snap.data();
       const hadPasswords = !!d.agentPasswords;
-      // Merge carefully so missing keys fall back to DEFAULT_DATA
       DATA = {
         agents:         d.agents         ?? DEFAULT_DATA.agents,
         coffeeBreaks:   d.coffeeBreaks   ?? DEFAULT_DATA.coffeeBreaks,
@@ -798,11 +870,10 @@ async function loadData(){
         patchingAgent:  d.patchingAgent  ?? DEFAULT_DATA.patchingAgent,
         patchWeek:      d.patchWeek      ?? DEFAULT_DATA.patchWeek,
         agentPasswords: d.agentPasswords ?? DEFAULT_DATA.agentPasswords,
+        onLeave:        d.onLeave        ?? DEFAULT_DATA.onLeave,
       };
-      // If agentPasswords was missing from Firestore, push it up now
       if(!hadPasswords) await setDoc(DOC_REF, DATA);
     } else {
-      // First run — push defaults to Firestore
       await setDoc(DOC_REF, DEFAULT_DATA);
     }
   } catch(e) {
@@ -813,7 +884,6 @@ async function loadData(){
   setStatusBar();
 }
 
-// ─── REAL-TIME listener (keeps all open tabs in sync) ───
 function attachRealtimeListener(){
   if(!_firestoreAvailable) return;
   onSnapshot(DOC_REF, (snap) => {
@@ -828,6 +898,7 @@ function attachRealtimeListener(){
       patchingAgent:  d.patchingAgent  ?? DEFAULT_DATA.patchingAgent,
       patchWeek:      d.patchWeek      ?? DEFAULT_DATA.patchWeek,
       agentPasswords: d.agentPasswords ?? DEFAULT_DATA.agentPasswords,
+      onLeave:        d.onLeave        ?? DEFAULT_DATA.onLeave,
     };
     render();
   }, (err) => {
@@ -835,7 +906,6 @@ function attachRealtimeListener(){
   });
 }
 
-// ─── SAVE to Firestore ───
 async function saveData(){
   const el = document.getElementById('last-update');
   if(!_firestoreAvailable){
@@ -859,7 +929,7 @@ function setStatusBar(){
 }
 
 // ═══════════════════════════════════════════════
-//  LOCK / AUTH
+//  AUTH
 // ═══════════════════════════════════════════════
 function showAdminLogin(){
   document.getElementById('admin-email').value = '';
@@ -875,24 +945,16 @@ async function doAdminLogin(){
   const pw    = document.getElementById('pw-input').value;
   const errEl = document.getElementById('lock-err');
   const btn   = document.getElementById('lock-unlock-btn');
-
-  if(!email || !pw){
-    errEl.textContent = 'Enter email and password.';
-    return;
-  }
-
+  if(!email || !pw){ errEl.textContent = 'Enter email and password.'; return; }
   btn.textContent = 'Signing in…';
   btn.disabled = true;
   errEl.textContent = '';
-
   try {
     await signInWithEmailAndPassword(auth, email, pw);
-    // onAuthStateChanged handles the rest
   } catch(e) {
     const inp = document.getElementById('pw-input');
     inp.classList.add('error');
     setTimeout(()=>inp.classList.remove('error'), 500);
-    // Surface a friendly message instead of Firebase's raw error
     if(e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'){
       errEl.textContent = 'Incorrect email or password.';
     } else if(e.code === 'auth/too-many-requests'){
@@ -905,7 +967,6 @@ async function doAdminLogin(){
     btn.disabled = false;
   }
 }
-
 async function lockApp(){
   await signOut(auth);
   isAdmin = false;
@@ -926,7 +987,6 @@ function applyMode(){
 //  AGENT BREAK MODAL
 // ═══════════════════════════════════════════════
 function openAgentBreakModal(){
-  // populate agent dropdown
   const sel = document.getElementById('abm-agent');
   sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
   document.getElementById('abm-pw').value = '';
@@ -937,13 +997,11 @@ function openAgentBreakModal(){
 function closeAgentBreakModal(){
   document.getElementById('agent-break-modal').classList.remove('open');
 }
-
 function agentCoffeeTotalMins(agentName){
   return DATA.coffeeBreaks
     .filter(b => b.agent === agentName)
     .reduce((sum, b) => sum + (b.end - b.start), 0);
 }
-
 function updateAbmQuota(){
   const agent = document.getElementById('abm-agent').value;
   const used  = agentCoffeeTotalMins(agent);
@@ -953,7 +1011,6 @@ function updateAbmQuota(){
   bar.className   = 'quota-bar' + (used >= 30 ? ' full' : '');
   document.getElementById('abm-quota-label').textContent = `${used} / 30 min`;
 }
-
 function confirmAgentBreak(){
   const agent    = document.getElementById('abm-agent').value;
   const pw       = document.getElementById('abm-pw').value;
@@ -961,8 +1018,6 @@ function confirmAgentBreak(){
   const durMins  = parseInt(document.getElementById('abm-duration').value);
   const errEl    = document.getElementById('abm-err');
   errEl.textContent = '';
-
-  // 1. Password check
   const passwords = DATA.agentPasswords || {};
   if(!passwords[agent] || passwords[agent] !== pw){
     const inp = document.getElementById('abm-pw');
@@ -971,35 +1026,53 @@ function confirmAgentBreak(){
     errEl.textContent = '✕ Incorrect password.';
     return;
   }
-
   const [sh, sm] = startVal.split(':').map(Number);
   const start    = sh * 60 + sm;
   const end      = start + durMins;
-
-  // 2. Max 30 min total quota
   const alreadyUsed = agentCoffeeTotalMins(agent);
   if(alreadyUsed + durMins > 30){
     errEl.textContent = `✕ You've used ${alreadyUsed} min. Adding ${durMins} min would exceed the 30-min daily limit.`;
     return;
   }
-
-  // 3. Max 2 agents overlapping at the same time
   const overlapping = DATA.coffeeBreaks.filter(b => b.start < end && b.end > start);
   if(overlapping.length >= 2){
     errEl.textContent = '✕ 2 agents are already on break during that slot. Please choose a different time.';
     return;
   }
-
-  // 4. No duplicate booking for the same agent in same window
   const duplicate = DATA.coffeeBreaks.find(b => b.agent === agent && b.start < end && b.end > start);
   if(duplicate){
     errEl.textContent = '✕ You already have a break overlapping this time slot.';
     return;
   }
-
   DATA.coffeeBreaks.push({ agent, start, end, agentAdded: true });
   DATA.coffeeBreaks.sort((a,b)=>a.start-b.start);
   closeAgentBreakModal();
+  render();
+  saveData();
+}
+
+// ═══════════════════════════════════════════════
+//  ON LEAVE MODAL
+// ═══════════════════════════════════════════════
+function openLeaveModal(){
+  const sel = document.getElementById('lv-agent');
+  sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
+  document.getElementById('lv-note').value = '';
+  document.getElementById('leave-modal').classList.add('open');
+}
+function closeLeaveModal(){
+  document.getElementById('leave-modal').classList.remove('open');
+}
+function confirmAddLeave(){
+  const agent = document.getElementById('lv-agent').value;
+  const note  = document.getElementById('lv-note').value.trim();
+  if(!DATA.onLeave) DATA.onLeave = [];
+  if(DATA.onLeave.find(l => l.agent === agent)){
+    closeLeaveModal();
+    return;
+  }
+  DATA.onLeave.push({ agent, note });
+  closeLeaveModal();
   render();
   saveData();
 }
@@ -1021,6 +1094,10 @@ function avStyle(name){
   return `background:${col.bg};color:${col.fg};`;
 }
 function initials(n){ return n.trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
+function shortName(n){
+  const parts = n.trim().split(' ');
+  return parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : '');
+}
 const pad = n => String(n).padStart(2,'0');
 function fmtM(m){ return pad(Math.floor(m/60))+':'+pad(m%60); }
 function nowMins(){ const n=new Date(); return n.getHours()*60+n.getMinutes()+n.getSeconds()/60; }
@@ -1036,11 +1113,14 @@ function render(){
   renderBreaks('coffee-list', DATA.coffeeBreaks, 'coffee');
   renderBreaks('lunch-list',  DATA.lunchBreaks,  'lunch');
   renderTimeline();
+  renderTriageStrip();
   renderTriage();
   renderPatching();
   renderRules();
   renderAgents();
   renderMetrics();
+  renderLeaveList();
+  renderLeavePanel();
   populateAgentSelect();
 }
 
@@ -1079,6 +1159,29 @@ function renderTimeline(){
     return `<div class="tl-row">
       <div class="tl-name">${ag}</div>
       <div class="tl-track">${bars}<div class="tl-now" style="left:${np}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderTriageStrip(){
+  const now = nowMins();
+  const strip = document.getElementById('triage-strip');
+  const badge = document.getElementById('strip-now-badge');
+  const nowSlot = DATA.triageSlots.find(t => now >= t.start && now < t.end);
+  if(badge){
+    if(nowSlot) badge.textContent = 'Now: ' + nowSlot.agent;
+    else if(now < 480) badge.textContent = 'Shift starts 08:00';
+    else badge.textContent = 'Shift ended';
+  }
+  if(!strip) return;
+  strip.innerHTML = DATA.triageSlots.map(t => {
+    const isNow  = now >= t.start && now < t.end;
+    const isPast = now >= t.end;
+    const shortTime = t.time.replace(/(\d+):00/g,'$1').replace('–','-');
+    return `<div class="ts-slot ${isNow?'ts-now':isPast?'ts-past':''}">
+      ${isNow ? '<div class="ts-now-dot"></div>' : ''}
+      <div class="ts-slot-time">${shortTime}</div>
+      <div class="ts-slot-name" title="${t.agent}">${shortName(t.agent)}</div>
     </div>`;
   }).join('');
 }
@@ -1132,6 +1235,41 @@ function renderAgents(){
     </div>`;
   }).join('');
   document.getElementById('m-total').textContent = DATA.agents.length;
+}
+
+function renderLeaveList(){
+  const el = document.getElementById('leave-list');
+  if(!el) return;
+  if(!DATA.onLeave || !DATA.onLeave.length){
+    el.innerHTML = '<div class="empty">No one on leave</div>';
+    return;
+  }
+  el.innerHTML = DATA.onLeave.map((l,i)=>`
+    <div class="break-row">
+      <div class="avatar" style="${avStyle(l.agent)}">${initials(l.agent)}</div>
+      <div style="flex:1;">
+        <div class="break-name">${l.agent}</div>
+        ${l.note ? `<div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${l.note}</div>` : ''}
+      </div>
+      <button class="del-btn" data-action="leave-delete" data-idx="${i}" title="Remove" style="display:block;">✕</button>
+    </div>`).join('');
+}
+
+function renderLeavePanel(){
+  const el = document.getElementById('leave-panel-list');
+  if(!el) return;
+  if(!DATA.onLeave || !DATA.onLeave.length){
+    el.innerHTML = '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);">—</div>';
+    return;
+  }
+  el.innerHTML = DATA.onLeave.map(l=>`
+    <div class="leave-entry">
+      <div class="avatar" style="${avStyle(l.agent)};width:22px;height:22px;font-size:8px;flex-shrink:0;">${initials(l.agent)}</div>
+      <div>
+        <div class="leave-entry-name">${shortName(l.agent)}</div>
+        ${l.note ? `<div class="leave-entry-note">${l.note}</div>` : ''}
+      </div>
+    </div>`).join('');
 }
 
 function renderMetrics(){
@@ -1196,8 +1334,6 @@ function openExcelModal(){
 function closeExcelModal(){
   document.getElementById('excel-modal').classList.remove('open');
 }
-
-// Live preview as user types/pastes
 function previewExcel(){
   const raw = document.getElementById('excel-paste').value.trim();
   if(!raw){ document.getElementById('excel-preview').textContent=''; return; }
@@ -1216,41 +1352,30 @@ function previewExcel(){
     prev.textContent = '\u2713 Detected '+parts.join(', ')+(errors.length?' \u00b7 \u26a0 '+errors.length+' skipped row(s)':'');
   }
 }
-
 function parseExcelBreaks(raw){
   const errors=[];
   const lines = raw.split('\n').map(l=>l.replace(/\r/,'')).filter(l=>l.trim());
   if(lines.length < 2){ errors.push('Not enough rows'); return {coffeeBreaks:[],lunchBreaks:[],triageSlots:[],errors}; }
-
-  // Skip first header row
   const dataLines = lines.slice(1);
-
-  // Buckets keyed by row duration
   const coffeeRaw=[], lunchRaw=[], triageRaw=[];
-
   for(const line of dataLines){
     const cols = line.split('\t');
     const timeStr = (cols[0]||'').trim();
     if(!timeStr || !/\d/.test(timeStr)) continue;
-
     const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/);
     if(!timeMatch){ errors.push('Bad time: '+timeStr); continue; }
     const start = parseInt(timeMatch[1])*60 + parseInt(timeMatch[2]);
     const end   = parseInt(timeMatch[3])*60 + parseInt(timeMatch[4]);
     const dur   = end - start;
-
     const agentCols = cols.slice(1).map(c=>c.trim()).filter(c=>c && c.length>1);
     if(!agentCols.length) continue;
-
     for(const agent of agentCols){
       const entry = { agent, start, end };
-      if(dur <= 15)       coffeeRaw.push(entry);   // 10-min rows → coffee
-      else if(dur <= 45)  lunchRaw.push(entry);    // 30-min rows → lunch
-      else                triageRaw.push(entry);   // 60-min rows → triage
+      if(dur <= 15)       coffeeRaw.push(entry);
+      else if(dur <= 45)  lunchRaw.push(entry);
+      else                triageRaw.push(entry);
     }
   }
-
-  // Merge consecutive slots per bucket
   function mergeConsecutive(entries){
     if(!entries.length) return [];
     const sorted = [...entries].sort((a,b)=> a.agent.localeCompare(b.agent)||a.start-b.start);
@@ -1258,21 +1383,14 @@ function parseExcelBreaks(raw){
     let cur = {...sorted[0]};
     for(let i=1;i<sorted.length;i++){
       const b = sorted[i];
-      if(b.agent===cur.agent && b.start===cur.end){
-        cur.end = b.end;
-      } else {
-        merged.push(cur);
-        cur = {...b};
-      }
+      if(b.agent===cur.agent && b.start===cur.end){ cur.end = b.end; }
+      else { merged.push(cur); cur = {...b}; }
     }
     merged.push(cur);
     return merged;
   }
-
   const coffeeBreaks = mergeConsecutive(coffeeRaw);
   const lunchBreaks  = mergeConsecutive(lunchRaw);
-
-  // Triage: merge and build slot objects
   const triageSlots = [];
   for(const b of mergeConsecutive(triageRaw)){
     const timeLabel = fmtM(b.start)+'–'+fmtM(b.end);
@@ -1281,30 +1399,23 @@ function parseExcelBreaks(raw){
     else { triageSlots.push({ time: timeLabel, agent: b.agent, start: b.start, end: b.end }); }
   }
   triageSlots.sort((a,b)=>a.start-b.start);
-
   return { coffeeBreaks, lunchBreaks, triageSlots, errors };
 }
-
 function confirmExcelImport(){
   const raw = document.getElementById('excel-paste').value.trim();
   if(!raw){ alert('Paste some data first.'); return; }
   const { coffeeBreaks, lunchBreaks, triageSlots, errors } = parseExcelBreaks(raw);
   const total = coffeeBreaks.length + lunchBreaks.length + triageSlots.length;
   if(total===0){ alert('No break rows detected. Check your data format.'); return; }
-
   const mode = document.querySelector('input[name="import-mode"]:checked').value;
   if(mode==='replace'){
     DATA.coffeeBreaks = coffeeBreaks;
     DATA.lunchBreaks  = lunchBreaks;
-    // For triage: replace only the slots whose time windows appear in import; keep others
     if(triageSlots.length){
-      const importedKeys = new Set(triageSlots.map(t=>t.start+'|'+t.end));
       DATA.triageSlots = DATA.triageSlots.map(t=>{
-        const key = t.start+'|'+t.end;
         const match = triageSlots.find(s=>s.start===t.start&&s.end===t.end);
         return match ? {...t, agent: match.agent} : t;
       });
-      // Add any triage slots that don't match existing windows
       triageSlots.forEach(s=>{
         if(!DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end)){
           DATA.triageSlots.push(s);
@@ -1324,13 +1435,12 @@ function confirmExcelImport(){
       else { DATA.triageSlots.push(s); DATA.triageSlots.sort((a,b)=>a.start-b.start); }
     });
   }
-
   closeExcelModal();
   render(); saveData();
 }
 
 // ═══════════════════════════════════════════════
-//  MODAL
+//  ADD BREAK MODAL
 // ═══════════════════════════════════════════════
 function openModal(type){
   activeModalType = type;
@@ -1359,7 +1469,7 @@ document.getElementById('m-type').addEventListener('change', function(){
 });
 
 // ═══════════════════════════════════════════════
-//  CLOCK & BOOT
+//  CLOCK
 // ═══════════════════════════════════════════════
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1373,63 +1483,46 @@ updateClock();
 setInterval(render, 30000);
 
 // ═══════════════════════════════════════════════
-//  STATIC ELEMENT EVENT WIRING (all in one place)
+//  EVENT WIRING
 // ═══════════════════════════════════════════════
-// Lock screen
 document.getElementById('lock-unlock-btn').addEventListener('click', doAdminLogin);
 document.getElementById('lock-back-btn').addEventListener('click', cancelAdminLogin);
 document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doAdminLogin(); });
 document.getElementById('admin-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('pw-input').focus(); });
-
-// Admin toggle button
 document.getElementById('admin-btn').addEventListener('click', () => { isAdmin ? lockApp() : showAdminLogin(); });
-
-// My Break button
 document.getElementById('my-break-btn').addEventListener('click', openAgentBreakModal);
-
-// Agent break modal
 document.getElementById('abm-cancel-btn').addEventListener('click', closeAgentBreakModal);
 document.getElementById('abm-ok-btn').addEventListener('click', confirmAgentBreak);
 document.getElementById('abm-agent').addEventListener('change', updateAbmQuota);
 document.getElementById('abm-pw').addEventListener('keydown', e => { if(e.key==='Enter') confirmAgentBreak(); });
-
-// Save button
 document.getElementById('save-btn').addEventListener('click', saveData);
-
-// Add break buttons
 document.getElementById('add-coffee-btn').addEventListener('click', () => openModal('coffee'));
 document.getElementById('add-lunch-btn').addEventListener('click', () => openModal('lunch'));
 document.getElementById('import-excel-btn').addEventListener('click', openExcelModal);
-
-// Add break modal
 document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
 document.getElementById('modal-ok-btn').addEventListener('click', confirmAddBreak);
-
-// Excel modal
 document.getElementById('excel-cancel-btn').addEventListener('click', closeExcelModal);
 document.getElementById('excel-ok-btn').addEventListener('click', confirmExcelImport);
 document.getElementById('excel-paste').addEventListener('input', previewExcel);
 document.getElementById('excel-paste').addEventListener('focus', function(){ this.style.borderColor='var(--blue)'; });
 document.getElementById('excel-paste').addEventListener('blur',  function(){ this.style.borderColor='var(--border2)'; });
-
-// Add agent button
 document.getElementById('add-agent-btn').addEventListener('click', addAgent);
-
-// Patching agent input
 document.getElementById('patch-input').addEventListener('input', function(){
   DATA.patchingAgent = this.value;
   renderMetrics();
   saveData();
 });
+document.getElementById('add-leave-btn').addEventListener('click', openLeaveModal);
+document.getElementById('lv-cancel-btn').addEventListener('click', closeLeaveModal);
+document.getElementById('lv-ok-btn').addEventListener('click', confirmAddLeave);
+document.getElementById('lv-note').addEventListener('keydown', e => { if(e.key==='Enter') confirmAddLeave(); });
 
-// ─── DELEGATED EVENTS for dynamically rendered rows ───
-// Handles all data-action elements inside coffee-list, lunch-list, triage-grid, rules-list, agents-grid
+// ─── DELEGATED EVENTS ───
 document.getElementById('app').addEventListener('change', e => {
   const el  = e.target;
   const act = el.dataset.action;
   const idx = parseInt(el.dataset.idx);
   if(!act) return;
-
   if(act==='break-name'){
     updateBreak(el.dataset.type, idx, 'agent', el.value);
   } else if(act==='break-start'){
@@ -1438,15 +1531,12 @@ document.getElementById('app').addEventListener('change', e => {
     updateBreakTime(el.dataset.type, idx, 'end', el.value);
   } else if(act==='triage-agent'){
     DATA.triageSlots[idx].agent = el.value;
-    renderMetrics(); saveData();
+    renderMetrics(); renderTriageStrip(); saveData();
   } else if(act==='rule-edit'){
     DATA.rules[idx] = el.value;
     saveData();
   } else if(act==='agent-name'){
     DATA.agents[idx] = el.value;
-    // also rename the key in agentPasswords
-    const oldName = Object.keys(DATA.agentPasswords || {}).find((_,i)=>i===idx);
-    // simpler: we stored by name, so rename key if name changed
     if(DATA.agentPasswords && DATA.agentPasswords[el.dataset.oldname] !== undefined){
       DATA.agentPasswords[el.value] = DATA.agentPasswords[el.dataset.oldname];
       delete DATA.agentPasswords[el.dataset.oldname];
@@ -1464,7 +1554,6 @@ document.getElementById('app').addEventListener('click', e => {
   if(!el) return;
   const act = el.dataset.action;
   const idx = parseInt(el.dataset.idx);
-
   if(act==='break-delete'){
     deleteBreak(el.dataset.type, idx);
   } else if(act==='rule-delete'){
@@ -1472,8 +1561,10 @@ document.getElementById('app').addEventListener('click', e => {
     render(); saveData();
   } else if(act==='agent-delete'){
     removeAgent(idx);
+  } else if(act==='leave-delete'){
+    DATA.onLeave.splice(idx, 1);
+    render(); saveData();
   } else if(act==='agent-pw-toggle'){
-    // find the password input in the same .agent-pw-wrap
     const wrap = el.closest('.agent-pw-wrap');
     const inp  = wrap.querySelector('.agent-pw-input');
     inp.type   = inp.type === 'password' ? 'text' : 'password';
@@ -1489,7 +1580,6 @@ applyMode();
 render();
 loadData().then(() => attachRealtimeListener());
 
-// Firebase Auth state — fires on load (restores session) and on sign-in/out
 onAuthStateChanged(auth, (user) => {
   isAdmin = !!user;
   document.getElementById('lock-screen').style.display = 'none';
