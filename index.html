@@ -162,6 +162,7 @@ body::before{
 .pip-blue{background:var(--blue);}
 .pip-purple{background:var(--purple);}
 .pip-red{background:var(--red);}
+.pip-teal{background:var(--teal);}
 
 /* ─── ADD BTN ─── */
 .add-btn{
@@ -216,11 +217,61 @@ body::before{
 .tl-bar{height:100%;position:absolute;border-radius:4px;opacity:0.85;transition:width 0.3s,left 0.3s;}
 .tl-coffee{background:var(--amber);}
 .tl-lunch {background:var(--green);}
+.tl-triage{background:rgba(0,212,212,0.35);border:1px solid rgba(0,212,212,0.6);}
+.tl-triage-now{background:rgba(0,212,212,0.6);border:1px solid var(--teal);box-shadow:0 0 6px rgba(0,212,212,0.35);}
 .tl-now   {position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:5;}
 .tl-times {display:flex;justify-content:space-between;font-size:9px;color:var(--muted);padding-left:126px;margin-top:4px;font-family:var(--mono);}
 .tl-legend{display:flex;gap:16px;margin-top:8px;font-size:10px;color:var(--muted);padding-left:126px;font-family:var(--mono);}
 .tl-legend span{display:flex;align-items:center;gap:5px;}
 .leg-box{width:10px;height:10px;border-radius:2px;}
+
+/* ─── TRIAGE TIMELINE ROW ─── */
+.tl-section-divider{
+  display:flex;align-items:center;gap:6px;
+  margin:8px 0 6px;
+}
+.tl-section-label{
+  font-size:9px;font-weight:700;color:var(--muted);letter-spacing:0.1em;
+  text-transform:uppercase;font-family:var(--mono);
+  width:120px;flex-shrink:0;text-align:right;
+}
+.tl-section-line{
+  flex:1;height:1px;background:var(--border2);
+}
+.tl-triage-track{flex:1;height:18px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden;}
+.tl-triage-bar{
+  height:100%;position:absolute;border-radius:3px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-weight:700;font-family:var(--mono);
+  overflow:hidden;white-space:nowrap;
+  transition:width 0.3s,left 0.3s;
+  color:rgba(0,0,0,0.7);
+  border-right:1px solid rgba(0,0,0,0.15);
+}
+.tl-triage-bar:last-child{border-right:none;}
+.tl-triage-bar.triage-active{
+  outline:2px solid var(--green);
+  outline-offset:-2px;
+  z-index:4;
+}
+.tl-triage-bar-label{
+  padding:0 4px;
+  overflow:hidden;text-overflow:ellipsis;
+  pointer-events:none;
+}
+/* triage color palette — cycles through hues */
+.tl-triage-bar:nth-child(1) { background:rgba(61,158,255,0.75); }
+.tl-triage-bar:nth-child(2) { background:rgba(0,229,160,0.75); }
+.tl-triage-bar:nth-child(3) { background:rgba(181,122,255,0.75); }
+.tl-triage-bar:nth-child(4) { background:rgba(255,179,64,0.75); }
+.tl-triage-bar:nth-child(5) { background:rgba(0,212,212,0.75); }
+.tl-triage-bar:nth-child(6) { background:rgba(255,79,79,0.75); }
+.tl-triage-bar:nth-child(7) { background:rgba(61,158,255,0.75); }
+.tl-triage-bar:nth-child(8) { background:rgba(0,229,160,0.75); }
+.tl-triage-bar:nth-child(9) { background:rgba(181,122,255,0.75); }
+.tl-triage-bar:nth-child(10){ background:rgba(255,179,64,0.75); }
+.tl-triage-bar:nth-child(11){ background:rgba(0,212,212,0.75); }
+.tl-triage-bar:nth-child(12){ background:rgba(255,79,79,0.75); }
 
 /* ─── TRIAGE ─── */
 .triage-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
@@ -676,6 +727,7 @@ body::before{
           <div class="tl-legend">
             <span><span class="leg-box" style="background:var(--amber)"></span>Coffee</span>
             <span><span class="leg-box" style="background:var(--green)"></span>Lunch</span>
+            <span><span class="leg-box" style="background:var(--teal);opacity:0.75;"></span>Triage</span>
             <span><span class="leg-box" style="background:var(--red)"></span>Now</span>
           </div>
         </div>
@@ -1106,6 +1158,16 @@ const DAY_START=480, DAY_END=1080, SPAN=DAY_END-DAY_START;
 function pct(m){ return Math.max(0,Math.min(100,(m-DAY_START)/SPAN*100)).toFixed(2); }
 function pctw(d){ return (d/SPAN*100).toFixed(2); }
 
+// triage color palette matching CSS nth-child colors
+const TRIAGE_COLORS = [
+  'rgba(61,158,255,0.75)',
+  'rgba(0,229,160,0.75)',
+  'rgba(181,122,255,0.75)',
+  'rgba(255,179,64,0.75)',
+  'rgba(0,212,212,0.75)',
+  'rgba(255,79,79,0.75)',
+];
+
 // ═══════════════════════════════════════════════
 //  RENDER
 // ═══════════════════════════════════════════════
@@ -1150,17 +1212,34 @@ function renderBreaks(containerId, breaks, type){
 function renderTimeline(){
   const now = nowMins();
   const np  = pct(now);
-  const agents = [...new Set([...DATA.coffeeBreaks,...DATA.lunchBreaks].map(b=>b.agent))];
-  document.getElementById('tl-wrap').innerHTML = agents.map(ag=>{
-    const bars = [
+
+  // Collect all agents across breaks AND triage
+  const agents = [...new Set([
+    ...DATA.coffeeBreaks.map(b=>b.agent),
+    ...DATA.lunchBreaks.map(b=>b.agent),
+    ...DATA.triageSlots.map(t=>t.agent),
+  ])];
+
+  const rows = agents.map(ag=>{
+    const breakBars = [
       ...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),
       ...DATA.lunchBreaks .filter(b=>b.agent===ag).map(b=>({...b,type:'lunch'})),
-    ].map(b=>`<div class="tl-bar tl-${b.type}" style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%" title="${b.agent} ${fmtM(b.start)}-${fmtM(b.end)}"></div>`).join('');
+    ].map(b=>`<div class="tl-bar tl-${b.type}" style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%" title="${b.agent} ${b.type==='coffee'?'☕':'🍕'} ${fmtM(b.start)}–${fmtM(b.end)}"></div>`).join('');
+
+    const triageBars = DATA.triageSlots
+      .filter(t=>t.agent===ag)
+      .map(t=>{
+        const isNow = now >= t.start && now < t.end;
+        return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}" style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%" title="${t.agent} 🎯 Triage ${fmtM(t.start)}–${fmtM(t.end)}"></div>`;
+      }).join('');
+
     return `<div class="tl-row">
       <div class="tl-name">${ag}</div>
-      <div class="tl-track">${bars}<div class="tl-now" style="left:${np}%"></div></div>
+      <div class="tl-track">${breakBars}${triageBars}<div class="tl-now" style="left:${np}%"></div></div>
     </div>`;
   }).join('');
+
+  document.getElementById('tl-wrap').innerHTML = rows;
 }
 
 function renderTriageStrip(){
@@ -1234,7 +1313,6 @@ function renderAgents(){
       <button class="del-btn" data-action="agent-delete" data-idx="${i}" title="Remove">✕</button>
     </div>`;
   }).join('');
-  // NOTE: m-total is NOT set here — it is set exclusively in renderMetrics()
 }
 
 function renderLeaveList(){
@@ -1277,7 +1355,6 @@ function renderMetrics(){
   const afk  = [...new Set([...DATA.coffeeBreaks,...DATA.lunchBreaks]
                .filter(b=>now>=b.start&&now<b.end).map(b=>b.agent))];
 
-  // Active today = unique agents who have at least one break scheduled
   const activeToday = new Set([
     ...DATA.coffeeBreaks.map(b => b.agent),
     ...DATA.lunchBreaks.map(b => b.agent),
