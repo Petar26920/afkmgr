@@ -37,14 +37,12 @@
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;overflow-x:hidden;}
 
-/* ─── GRID NOISE BACKGROUND ─── */
 body::before{
   content:'';position:fixed;inset:0;
   background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   pointer-events:none;z-index:0;
 }
 
-/* ─── ADMIN LOCK OVERLAY ─── */
 #lock-screen{
   position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;
   display:none;align-items:center;justify-content:center;
@@ -55,20 +53,10 @@ body::before{
   border-radius:16px;padding:36px;text-align:center;
   box-shadow:0 40px 80px rgba(0,0,0,0.6);
 }
-.lock-logo{
-  font-size:11px;font-weight:700;letter-spacing:0.2em;color:var(--muted);
-  text-transform:uppercase;margin-bottom:8px;font-family:var(--mono);
-}
+.lock-logo{font-size:11px;font-weight:700;letter-spacing:0.2em;color:var(--muted);text-transform:uppercase;margin-bottom:8px;font-family:var(--mono);}
 .lock-title{font-size:26px;font-weight:800;margin-bottom:4px;}
 .lock-title span{color:var(--blue);}
 .lock-sub{font-size:12px;color:var(--muted);margin-bottom:28px;}
-.lock-tabs{display:flex;gap:4px;background:var(--surface2);border-radius:8px;padding:4px;margin-bottom:20px;}
-.lock-tab{
-  flex:1;padding:7px;border:none;border-radius:6px;font-family:var(--font);
-  font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;
-  background:transparent;color:var(--muted);
-}
-.lock-tab.active{background:var(--surface3);color:var(--text);}
 .lock-input{
   width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:8px;
   padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:14px;
@@ -87,7 +75,6 @@ body::before{
 .lock-btn.viewer:hover{color:var(--text);}
 .lock-err{font-size:12px;color:var(--red);margin-top:10px;min-height:16px;}
 
-/* ─── LAYOUT ─── */
 #app{display:block;position:relative;z-index:1;}
 .header{
   display:flex;justify-content:space-between;align-items:center;
@@ -96,47 +83,23 @@ body::before{
   position:sticky;top:0;z-index:100;
 }
 .header-left{display:flex;align-items:center;gap:14px;}
-.logo-badge{
-  font-family:var(--mono);font-size:10px;font-weight:500;
-  padding:4px 10px;border-radius:4px;border:1px solid var(--blue2);
-  color:var(--blue);background:var(--blue2);letter-spacing:0.08em;
-}
+.logo-badge{font-family:var(--mono);font-size:10px;font-weight:500;padding:4px 10px;border-radius:4px;border:1px solid var(--blue2);color:var(--blue);background:var(--blue2);letter-spacing:0.08em;}
 .header-title{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
 .header-title span{color:var(--muted);font-weight:400;font-size:13px;margin-left:4px;}
 .header-right{display:flex;align-items:center;gap:10px;}
-.clock-display{
-  font-family:var(--mono);font-size:20px;font-weight:400;
-  color:var(--text);letter-spacing:0.06em;
-}
+.clock-display{font-family:var(--mono);font-size:20px;font-weight:400;color:var(--text);letter-spacing:0.06em;}
 .date-display{font-size:11px;color:var(--muted);text-align:right;margin-top:1px;}
-.mode-badge{
-  font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;
-  letter-spacing:0.06em;font-family:var(--mono);
-}
+.mode-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;letter-spacing:0.06em;font-family:var(--mono);}
 .mode-badge.admin{background:var(--amber2);color:var(--amber);border:1px solid rgba(255,179,64,0.2);}
 .mode-badge.viewer{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
-.icon-btn{
-  background:var(--surface2);border:1px solid var(--border);border-radius:6px;
-  padding:6px 10px;color:var(--muted);font-size:12px;cursor:pointer;
-  font-family:var(--mono);transition:all 0.2s;
-}
+.icon-btn{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:var(--mono);transition:all 0.2s;}
 .icon-btn:hover{color:var(--text);border-color:var(--border2);}
 
 .main{padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
 
-/* ─── METRICS ─── */
-.metrics{
-  display:grid;
-  grid-template-columns: 0.8fr 0.8fr 1.4fr 1.4fr;
-  gap:12px;
-}
-.metric{
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);
-  padding:14px 16px;position:relative;overflow:hidden;
-}
-.metric::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;
-}
+.metrics{display:grid;grid-template-columns: 0.8fr 0.8fr 1.4fr 1.4fr;gap:12px;}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;position:relative;overflow:hidden;}
+.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;}
 .metric.m-blue::before{background:var(--blue);}
 .metric.m-amber::before{background:var(--amber);}
 .metric.m-green::before{background:var(--green);}
@@ -150,7 +113,6 @@ body::before{
 .metric-val.sm{font-size:15px;padding-top:6px;}
 .metric-sub{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--mono);}
 
-/* ─── GRID ─── */
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .full{grid-column:1/-1;}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px;}
@@ -164,28 +126,14 @@ body::before{
 .pip-red{background:var(--red);}
 .pip-teal{background:var(--teal);}
 
-/* ─── ADD BTN ─── */
-.add-btn{
-  font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px;
-  background:var(--surface3);border:1px solid var(--border2);color:var(--muted2);
-  cursor:pointer;font-family:var(--mono);transition:all 0.15s;display:none;
-}
+.add-btn{font-size:11px;font-weight:600;padding:4px 10px;border-radius:5px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted2);cursor:pointer;font-family:var(--mono);transition:all 0.15s;display:none;}
 .add-btn:hover{color:var(--text);border-color:var(--blue);background:var(--blue2);}
 .admin-mode .add-btn{display:inline-flex;align-items:center;gap:4px;}
 
-/* ─── BREAK ROWS ─── */
-.break-row{
-  display:flex;align-items:center;gap:8px;
-  padding:6px 0;border-bottom:1px solid var(--border);
-  animation:fadeIn 0.2s;
-}
+.break-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);animation:fadeIn 0.2s;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .break-row:last-child{border-bottom:none;}
-.avatar{
-  width:30px;height:30px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:700;flex-shrink:0;font-family:var(--mono);
-}
+.avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;font-family:var(--mono);}
 .break-name{font-size:13px;flex:1;font-weight:600;}
 .badge{font-size:10px;padding:3px 9px;border-radius:20px;font-weight:600;font-family:var(--mono);white-space:nowrap;}
 .badge-coffee{background:var(--amber2);color:var(--amber);border:1px solid rgba(255,179,64,0.2);}
@@ -193,24 +141,15 @@ body::before{
 .badge-now   {background:var(--red);color:#fff;animation:pulse 1.5s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
 
-/* editable inline fields */
-.edit-field{
-  background:var(--surface3);border:1px solid var(--border2);border-radius:5px;
-  padding:3px 7px;color:var(--text);font-family:var(--mono);font-size:11px;
-  outline:none;width:90px;transition:border-color 0.15s;
-}
+.edit-field{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;padding:3px 7px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;width:90px;transition:border-color 0.15s;}
 .edit-field:focus{border-color:var(--blue);}
 .edit-field.name-field{width:130px;font-size:12px;font-family:var(--font);}
-.del-btn{
-  background:none;border:none;color:var(--muted2);font-size:14px;cursor:pointer;
-  padding:2px 5px;border-radius:4px;transition:all 0.15s;display:none;line-height:1;
-}
+.del-btn{background:none;border:none;color:var(--muted2);font-size:14px;cursor:pointer;padding:2px 5px;border-radius:4px;transition:all 0.15s;display:none;line-height:1;}
 .del-btn:hover{color:var(--red);background:var(--red2);}
 .admin-mode .del-btn{display:block;}
 .admin-mode .badge{display:none;}
 .admin-mode .break-name-display{display:none;}
 
-/* ─── TIMELINE ─── */
 .tl-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
 .tl-name{font-size:10px;color:var(--muted);width:120px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);}
 .tl-track{flex:1;height:14px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden;}
@@ -225,236 +164,114 @@ body::before{
 .tl-legend span{display:flex;align-items:center;gap:5px;}
 .leg-box{width:10px;height:10px;border-radius:2px;}
 
-/* ─── TRIAGE TIMELINE ROW ─── */
-.tl-section-divider{
-  display:flex;align-items:center;gap:6px;
-  margin:8px 0 6px;
-}
-.tl-section-label{
-  font-size:9px;font-weight:700;color:var(--muted);letter-spacing:0.1em;
-  text-transform:uppercase;font-family:var(--mono);
-  width:120px;flex-shrink:0;text-align:right;
-}
-.tl-section-line{
-  flex:1;height:1px;background:var(--border2);
-}
-.tl-triage-track{flex:1;height:18px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden;}
-.tl-triage-bar{
-  height:100%;position:absolute;border-radius:3px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:8px;font-weight:700;font-family:var(--mono);
-  overflow:hidden;white-space:nowrap;
-  transition:width 0.3s,left 0.3s;
-  color:rgba(0,0,0,0.7);
-  border-right:1px solid rgba(0,0,0,0.15);
-}
-.tl-triage-bar:last-child{border-right:none;}
-.tl-triage-bar.triage-active{
-  outline:2px solid var(--green);
-  outline-offset:-2px;
-  z-index:4;
-}
-.tl-triage-bar-label{
-  padding:0 4px;
-  overflow:hidden;text-overflow:ellipsis;
-  pointer-events:none;
-}
-/* triage color palette — cycles through hues */
-.tl-triage-bar:nth-child(1) { background:rgba(61,158,255,0.75); }
-.tl-triage-bar:nth-child(2) { background:rgba(0,229,160,0.75); }
-.tl-triage-bar:nth-child(3) { background:rgba(181,122,255,0.75); }
-.tl-triage-bar:nth-child(4) { background:rgba(255,179,64,0.75); }
-.tl-triage-bar:nth-child(5) { background:rgba(0,212,212,0.75); }
-.tl-triage-bar:nth-child(6) { background:rgba(255,79,79,0.75); }
-.tl-triage-bar:nth-child(7) { background:rgba(61,158,255,0.75); }
-.tl-triage-bar:nth-child(8) { background:rgba(0,229,160,0.75); }
-.tl-triage-bar:nth-child(9) { background:rgba(181,122,255,0.75); }
-.tl-triage-bar:nth-child(10){ background:rgba(255,179,64,0.75); }
-.tl-triage-bar:nth-child(11){ background:rgba(0,212,212,0.75); }
-.tl-triage-bar:nth-child(12){ background:rgba(255,79,79,0.75); }
-
-/* ─── TRIAGE ─── */
 .triage-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
-.triage-slot{
-  background:var(--surface2);border-radius:var(--r);padding:8px 10px;
-  border:1px solid transparent;transition:all 0.2s;
-}
+.triage-slot{background:var(--surface2);border-radius:var(--r);padding:8px 10px;border:1px solid transparent;transition:all 0.2s;}
 .triage-slot.now{border-color:var(--green);background:var(--green2);}
 .triage-time {font-size:10px;color:var(--muted);font-family:var(--mono);}
 .triage-agent{font-size:12px;font-weight:700;margin-top:3px;}
 .triage-slot.now .triage-agent{color:var(--green);}
-
-/* triage edit mode */
 .triage-slot .triage-edit{display:none;}
 .admin-mode .triage-slot .triage-agent-display{display:none;}
 .admin-mode .triage-slot .triage-edit{display:block;}
-.triage-input{
-  background:var(--surface3);border:1px solid var(--border2);border-radius:4px;
-  padding:3px 6px;color:var(--text);font-family:var(--font);font-size:11px;
-  font-weight:600;outline:none;width:100%;margin-top:3px;
-}
+.triage-input{background:var(--surface3);border:1px solid var(--border2);border-radius:4px;padding:3px 6px;color:var(--text);font-family:var(--font);font-size:11px;font-weight:600;outline:none;width:100%;margin-top:3px;}
 .triage-input:focus{border-color:var(--blue);}
 
-/* ─── PATCHING ─── */
 .patching-section{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
-.patching-week{
-  font-size:10px;font-family:var(--mono);color:var(--muted);
-  background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);
-}
+.patching-week{font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);}
 .patch-agent-display{font-size:14px;font-weight:700;color:var(--purple);}
-.patch-input{
-  background:var(--surface3);border:1px solid var(--border2);border-radius:6px;
-  padding:5px 10px;color:var(--text);font-family:var(--font);font-size:13px;
-  font-weight:700;outline:none;width:200px;display:none;
-}
+.patch-input{background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:5px 10px;color:var(--text);font-family:var(--font);font-size:13px;font-weight:700;outline:none;width:200px;display:none;}
 .patch-input:focus{border-color:var(--purple);}
 .admin-mode .patch-agent-display{display:none;}
 .admin-mode .patch-input{display:block;}
 
-/* ─── RULES ─── */
 .rules-list{display:flex;flex-direction:column;gap:8px;}
 .rule-item{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);}
 .rule-item:last-child{border-bottom:none;}
-.rule-num{
-  font-family:var(--mono);font-size:10px;font-weight:700;color:var(--blue);
-  background:var(--blue2);border-radius:4px;padding:2px 6px;flex-shrink:0;margin-top:1px;
-}
+.rule-num{font-family:var(--mono);font-size:10px;font-weight:700;color:var(--blue);background:var(--blue2);border-radius:4px;padding:2px 6px;flex-shrink:0;margin-top:1px;}
 .rule-text{font-size:12px;color:var(--muted);line-height:1.55;flex:1;}
-.rule-input{
-  background:var(--surface3);border:1px solid var(--border2);border-radius:5px;
-  padding:4px 8px;color:var(--text);font-family:var(--font);font-size:12px;
-  outline:none;width:100%;display:none;
-}
+.rule-input{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;padding:4px 8px;color:var(--text);font-family:var(--font);font-size:12px;outline:none;width:100%;display:none;}
 .rule-input:focus{border-color:var(--blue);}
 .admin-mode .rule-text{display:none;}
 .admin-mode .rule-input{display:block;}
 
-/* ─── AGENTS LIST ─── */
+/* ─── AGENTS ─── */
 .agents-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
 .agent-item{display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--border);}
 .agent-item:last-child{border-bottom:none;}
 .agent-item-name{font-size:12px;font-weight:600;flex:1;}
-.agent-name-input{
-  background:var(--surface3);border:1px solid var(--border2);border-radius:5px;
-  padding:3px 7px;color:var(--text);font-family:var(--font);font-size:12px;
-  font-weight:600;outline:none;width:120px;display:none;
-}
+.agent-name-input{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;padding:3px 7px;color:var(--text);font-family:var(--font);font-size:12px;font-weight:600;outline:none;width:120px;display:none;}
 .agent-name-input:focus{border-color:var(--blue);}
 .admin-mode .agent-item-name{display:none;}
 .admin-mode .agent-name-input{display:block;}
 
-/* password field shown only in admin */
 .agent-pw-wrap{display:none;align-items:center;gap:4px;}
 .admin-mode .agent-pw-wrap{display:flex;}
-.agent-pw-input{
-  background:var(--surface3);border:1px solid var(--border2);border-radius:5px;
-  padding:3px 7px;color:var(--text);font-family:var(--mono);font-size:11px;
-  outline:none;width:100px;
-}
+.agent-pw-input{background:var(--surface3);border:1px solid var(--border2);border-radius:5px;padding:3px 7px;color:var(--text);font-family:var(--mono);font-size:11px;outline:none;width:100px;}
 .agent-pw-input:focus{border-color:var(--amber);}
-.pw-eye{
-  background:none;border:none;color:var(--muted2);cursor:pointer;
-  font-size:13px;padding:2px 4px;border-radius:3px;line-height:1;
-  transition:color 0.15s;
-}
+.pw-eye{background:none;border:none;color:var(--muted2);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:3px;line-height:1;transition:color 0.15s;}
 .pw-eye:hover{color:var(--text);}
 
-.add-agent-btn{
-  font-size:11px;font-weight:600;padding:5px 10px;border-radius:5px;
-  background:var(--surface3);border:1px solid var(--border2);color:var(--muted2);
-  cursor:pointer;font-family:var(--mono);transition:all 0.15s;display:none;width:100%;margin-top:6px;
+/* ─── Break visibility toggle ─── */
+.break-vis-wrap{display:none;align-items:center;gap:4px;}
+.admin-mode .break-vis-wrap{display:flex;}
+.break-vis-toggle{
+  position:relative;display:inline-block;width:32px;height:18px;flex-shrink:0;
 }
+.break-vis-toggle input{opacity:0;width:0;height:0;}
+.break-vis-slider{
+  position:absolute;cursor:pointer;inset:0;background:var(--surface3);
+  border:1px solid var(--border2);border-radius:9px;transition:all 0.2s;
+}
+.break-vis-slider:before{
+  content:'';position:absolute;height:12px;width:12px;left:2px;bottom:2px;
+  background:var(--muted);border-radius:50%;transition:all 0.2s;
+}
+.break-vis-toggle input:checked + .break-vis-slider{background:var(--green2);border-color:var(--green);}
+.break-vis-toggle input:checked + .break-vis-slider:before{transform:translateX(14px);background:var(--green);}
+.break-vis-label{font-size:9px;color:var(--muted);font-family:var(--mono);white-space:nowrap;}
+
+.add-agent-btn{font-size:11px;font-weight:600;padding:5px 10px;border-radius:5px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted2);cursor:pointer;font-family:var(--mono);transition:all 0.15s;display:none;width:100%;margin-top:6px;}
 .add-agent-btn:hover{color:var(--text);border-color:var(--purple);background:var(--purple2);}
 .admin-mode .add-agent-btn{display:block;}
 
-/* ─── BOTTOM BAR ─── */
-.bottom-bar{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:10px 14px;background:var(--surface);border-radius:var(--r);
-  border:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--mono);
-}
-.save-btn{
-  padding:5px 14px;background:var(--green);color:#000;border:none;
-  border-radius:5px;font-family:var(--font);font-size:12px;font-weight:700;
-  cursor:pointer;display:none;transition:all 0.2s;
-}
+.bottom-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);font-size:11px;color:var(--muted);font-family:var(--mono);}
+.save-btn{padding:5px 14px;background:var(--green);color:#000;border:none;border-radius:5px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;display:none;transition:all 0.2s;}
 .save-btn:hover{background:#00ffa8;transform:translateY(-1px);}
 .admin-mode .save-btn{display:block;}
 
-/* ─── MODAL ─── */
-.modal-overlay{
-  position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;
-  display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);
-}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
 .modal-overlay.open{display:flex;}
-.modal{
-  background:var(--surface);border:1px solid var(--border2);border-radius:14px;
-  padding:28px;width:360px;box-shadow:0 40px 80px rgba(0,0,0,0.5);
-}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px;width:360px;box-shadow:0 40px 80px rgba(0,0,0,0.5);}
 .modal h2{font-size:16px;font-weight:800;margin-bottom:4px;}
 .modal p{font-size:12px;color:var(--muted);margin-bottom:20px;}
 .modal-field{margin-bottom:14px;}
 .modal-field label{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;font-family:var(--mono);letter-spacing:0.04em;text-transform:uppercase;}
-.modal-field input,
-.modal-field select{
-  width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;
-  padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;
-  transition:border-color 0.2s;
-}
-.modal-field input:focus,
-.modal-field select:focus{border-color:var(--blue);}
+.modal-field input,.modal-field select{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;color:var(--text);font-family:var(--mono);font-size:13px;outline:none;transition:border-color 0.2s;}
+.modal-field input:focus,.modal-field select:focus{border-color:var(--blue);}
 .modal-field select option{background:var(--surface2);}
 .modal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .modal-actions{display:flex;gap:8px;margin-top:20px;}
-.modal-cancel{
-  flex:1;padding:9px;background:var(--surface2);border:1px solid var(--border);
-  border-radius:6px;color:var(--muted);font-family:var(--font);font-size:13px;cursor:pointer;
-}
-.modal-ok{
-  flex:2;padding:9px;background:var(--blue);border:none;
-  border-radius:6px;color:#fff;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;
-}
+.modal-cancel{flex:1;padding:9px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-family:var(--font);font-size:13px;cursor:pointer;}
+.modal-ok{flex:2;padding:9px;background:var(--blue);border:none;border-radius:6px;color:#fff;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;}
 .modal-ok:hover{background:#5aaeff;}
 
-/* ─── EMPTY STATE ─── */
 .empty{font-size:12px;color:var(--muted);padding:8px 0;font-family:var(--mono);}
 
-/* ─── MY BREAK BUTTON (viewer mode) ─── */
-.my-break-btn{
-  background:var(--amber2);border:1px solid rgba(255,179,64,0.3);border-radius:6px;
-  padding:6px 12px;color:var(--amber);font-size:12px;font-weight:700;cursor:pointer;
-  font-family:var(--mono);transition:all 0.2s;letter-spacing:0.04em;
-}
+.my-break-btn{background:var(--amber2);border:1px solid rgba(255,179,64,0.3);border-radius:6px;padding:6px 12px;color:var(--amber);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--mono);transition:all 0.2s;letter-spacing:0.04em;}
 .my-break-btn:hover{background:rgba(255,179,64,0.25);transform:translateY(-1px);}
 
-/* ─── AGENT BREAK MODAL extras ─── */
-.abm-info{
-  font-size:11px;color:var(--muted);font-family:var(--mono);
-  background:var(--surface2);border-radius:6px;padding:8px 10px;
-  margin-bottom:14px;line-height:1.6;
-}
+.abm-info{font-size:11px;color:var(--muted);font-family:var(--mono);background:var(--surface2);border-radius:6px;padding:8px 10px;margin-bottom:14px;line-height:1.6;}
 .abm-info span{color:var(--amber);font-weight:700;}
-.abm-quota{
-  display:flex;align-items:center;gap:8px;margin-top:10px;
-  font-size:11px;font-family:var(--mono);
-}
+.abm-quota{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:11px;font-family:var(--mono);}
 .quota-bar-wrap{flex:1;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;}
 .quota-bar{height:100%;background:var(--amber);border-radius:3px;transition:width 0.3s;}
 .quota-bar.full{background:var(--red);}
 .abm-err{font-size:12px;color:var(--red);min-height:16px;margin-top:8px;font-family:var(--mono);}
 .agent-lock{font-size:11px;color:var(--muted2);padding:2px 5px;}
 
-/* ─── TRIAGE STRIP ─── */
-.triage-strip-wrap{
-  display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);
-}
-#triage-strip-card{
-  margin-top: 10px;
-}
-.ts-slot{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  padding:7px 4px 6px;border-right:1px solid var(--border);transition:background 0.2s;
-}
+.triage-strip-wrap{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+#triage-strip-card{margin-top:10px;}
+.ts-slot{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 4px 6px;border-right:1px solid var(--border);transition:background 0.2s;}
 .ts-slot:last-child{border-right:none;}
 .ts-slot.ts-now{background:var(--green2);border-top:2px solid var(--green);}
 .ts-slot.ts-past{opacity:0.4;}
@@ -464,16 +281,12 @@ body::before{
 .ts-slot.ts-now .ts-slot-name{color:var(--green);font-weight:700;}
 .ts-now-dot{width:6px;height:6px;border-radius:50%;background:var(--green);margin-bottom:3px;animation:pulse 1.5s infinite;}
 
-/* ─── ON LEAVE PANEL ─── */
-.leave-panel{
-  width:240px !important;flex-shrink:0;display:flex;flex-direction:column;
-}
+.leave-panel{width:240px !important;flex-shrink:0;display:flex;flex-direction:column;}
 .leave-entry{display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border);}
 .leave-entry:last-child{border-bottom:none;}
 .leave-entry-name{font-size:18px;font-weight:600;line-height:1.2;}
 .leave-entry-note{font-size:9px;color:var(--muted);font-family:var(--mono);line-height:1.2;}
 
-/* ─── VIEWER MODE ─── */
 #app:not(.admin-mode) .admin-only  { display:none !important; }
 #app:not(.admin-mode) .bottom-bar  { display:none !important; }
 #app:not(.admin-mode) .icon-btn    { display:none !important; }
@@ -500,7 +313,7 @@ body::before{
 </head>
 <body>
 
-<!-- ════════ ADMIN LOCK OVERLAY ════════ -->
+<!-- ADMIN LOCK OVERLAY -->
 <div id="lock-screen">
   <div class="lock-card">
     <div class="lock-logo">AFK · v2</div>
@@ -516,7 +329,7 @@ body::before{
   </div>
 </div>
 
-<!-- ════════ ADD BREAK MODAL ════════ -->
+<!-- ADD BREAK MODAL -->
 <div class="modal-overlay" id="add-modal">
   <div class="modal">
     <h2>Add break</h2>
@@ -549,7 +362,7 @@ body::before{
   </div>
 </div>
 
-<!-- ════════ EXCEL IMPORT MODAL ════════ -->
+<!-- EXCEL IMPORT MODAL -->
 <div class="modal-overlay" id="excel-modal">
   <div class="modal" style="width:520px;max-width:95vw;">
     <h2>📋 Import from Excel</h2>
@@ -575,7 +388,7 @@ body::before{
   </div>
 </div>
 
-<!-- ════════ AGENT BREAK MODAL ════════ -->
+<!-- AGENT BREAK MODAL -->
 <div class="modal-overlay" id="agent-break-modal">
   <div class="modal" style="width:380px;">
     <h2>☕ Book My Break</h2>
@@ -620,7 +433,7 @@ body::before{
   </div>
 </div>
 
-<!-- ════════ ON LEAVE MODAL ════════ -->
+<!-- ON LEAVE MODAL -->
 <div class="modal-overlay" id="leave-modal">
   <div class="modal" style="width:340px;">
     <h2>Mark on leave</h2>
@@ -640,7 +453,7 @@ body::before{
   </div>
 </div>
 
-<!-- ════════ APP ════════ -->
+<!-- APP -->
 <div id="app">
   <div class="header">
     <div class="header-left">
@@ -659,7 +472,6 @@ body::before{
   </div>
 
   <div class="main">
-    <!-- METRICS -->
     <div class="metrics">
       <div class="metric m-blue">
         <div class="metric-label">Active today</div>
@@ -683,10 +495,8 @@ body::before{
       </div>
     </div>
 
-    <!-- GRID -->
     <div class="grid2">
 
-      <!-- BREAKS (admin only) -->
       <div class="card admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-amber"></span>Coffee breaks</div>
@@ -706,7 +516,6 @@ body::before{
         <div id="lunch-list"></div>
       </div>
 
-      <!-- ON LEAVE (admin only) -->
       <div class="card admin-only" style="grid-column:1/-1;">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-purple"></span>On leave</div>
@@ -715,9 +524,7 @@ body::before{
         <div id="leave-list"></div>
       </div>
 
-      <!-- TIMELINE + LEAVE PANEL — visible to everyone -->
       <div style="display:flex;gap:14px;grid-column:1/-1;">
-
         <div class="card" style="flex:1;min-width:0;" id="timeline-card">
           <div class="card-header">
             <div class="card-title"><span class="pip pip-blue"></span>Break timeline · 08:00 – 18:00</div>
@@ -732,17 +539,14 @@ body::before{
           </div>
         </div>
 
-        <!-- ON LEAVE PANEL — visible to everyone -->
         <div class="card leave-panel" id="leave-panel">
           <div class="card-header" style="margin-bottom:8px;">
             <div class="card-title"><span class="pip pip-purple"></span>On leave</div>
           </div>
           <div id="leave-panel-list" style="display:flex;flex-direction:column;gap:6px;flex:1;"></div>
         </div>
+      </div>
 
-      </div><!-- end timeline+leave wrapper -->
-
-      <!-- TRIAGE FULL (admin only) -->
       <div class="card full admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div>
@@ -750,13 +554,11 @@ body::before{
         <div class="triage-grid" id="triage-grid"></div>
       </div>
 
-      <!-- TRIAGE STRIP — visible to all -->
       <div class="card" id="triage-strip-card">
         <div class="card-header" style="margin-bottom:8px;"></div>
         <div class="triage-strip-wrap" id="triage-strip"></div>
       </div>
 
-      <!-- PATCHING + RULES (admin only) -->
       <div class="card admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-purple"></span>Patching agent</div>
@@ -774,7 +576,6 @@ body::before{
         <div class="rules-list" id="rules-list"></div>
       </div>
 
-      <!-- AGENTS (admin only) -->
       <div class="card full admin-only">
         <div class="card-header">
           <div class="card-title"><span class="pip pip-blue"></span>Agent roster &amp; passwords</div>
@@ -784,12 +585,14 @@ body::before{
             <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:24px;text-align:center;">Av</span>
             <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;flex:1;">Name</span>
             <span style="font-size:9px;color:var(--amber);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:116px;">Break password</span>
+            <span style="font-size:9px;color:var(--green);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:80px;">In breaks</span>
             <span style="width:20px;"></span>
           </div>
           <div style="display:flex;gap:7px;align-items:center;padding:0 0 4px;border-bottom:1px solid var(--border2);">
             <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:24px;text-align:center;">Av</span>
             <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;flex:1;">Name</span>
             <span style="font-size:9px;color:var(--amber);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:116px;">Break password</span>
+            <span style="font-size:9px;color:var(--green);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:80px;">In breaks</span>
             <span style="width:20px;"></span>
           </div>
         </div>
@@ -797,9 +600,8 @@ body::before{
         <button class="add-agent-btn" id="add-agent-btn">+ Add agent</button>
       </div>
 
-    </div><!-- end grid2 -->
+    </div>
 
-    <!-- BOTTOM BAR -->
     <div class="bottom-bar">
       <span id="last-update">Live · updates every 30s</span>
       <button class="save-btn" id="save-btn">💾 Save changes</button>
@@ -807,7 +609,6 @@ body::before{
   </div>
 </div>
 
-<!-- ════════ FIREBASE SDK ════════ -->
 <script type="module">
 import { initializeApp }                        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc, onSnapshot }
@@ -824,22 +625,28 @@ const firebaseConfig = {
   appId:             '1:964360625277:web:10a6772622bca912f3a514',
 };
 
-const fbApp = initializeApp(firebaseConfig);
-const db    = getFirestore(fbApp);
-const auth  = getAuth(fbApp);
+const fbApp  = initializeApp(firebaseConfig);
+const db     = getFirestore(fbApp);
+const auth   = getAuth(fbApp);
 const DOC_REF = doc(db, 'afk', 'state');
 
-// ═══════════════════════════════════════════════
-//  DATA
-// ═══════════════════════════════════════════════
+// ─── SECURITY: derive admin purely from Firebase Auth, never from a mutable JS flag ───
+// All mutating operations call requireAdmin() which reads auth.currentUser at call-time.
+function isAdminNow(){ return !!auth.currentUser; }
+function requireAdmin(){
+  if(!isAdminNow()) throw new Error('Not authenticated as admin');
+}
+
 const DEFAULT_DATA = {
   agents: [
     'Bogdan Repanovic','Danica Pecanac','Ivan Curcic','Sari Abboushi',
     'Luka Martinovic','Aleksa Kostic','Bojan Pavlovic','Stefan Krstic',
     'Luka Jovanovic','Milos Savic','Tamara Trakic','Milica Stepanovic',
     'Dimitrije Milosavljevic','David Kostic','Isidora Stevanovic',
-    'Petar Spasic','Radislav Lazarevic'
+    'Petar Spasic','Radislav Lazarevic',
   ],
+  // agentBreakVisible[name] = true means shown in break dropdowns (default true)
+  agentBreakVisible: {},
   coffeeBreaks: [
     {agent:'Bojan Pavlovic',   start:660, end:690},
     {agent:'Bogdan Repanovic', start:900, end:930},
@@ -902,29 +709,33 @@ const DEFAULT_DATA = {
 };
 
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
-let isAdmin = false;
 let activeModalType = 'coffee';
 let _firestoreAvailable = true;
 
-// ─── LOAD ───
+// Helper: is an agent visible in break dropdowns?
+function agentInBreaks(name){
+  const v = DATA.agentBreakVisible;
+  return v && name in v ? v[name] : true; // default true
+}
+
 async function loadData(){
   try {
     const snap = await getDoc(DOC_REF);
     if(snap.exists()){
       const d = snap.data();
-      const hadPasswords = !!d.agentPasswords;
       DATA = {
-        agents:         d.agents         ?? DEFAULT_DATA.agents,
-        coffeeBreaks:   d.coffeeBreaks   ?? DEFAULT_DATA.coffeeBreaks,
-        lunchBreaks:    d.lunchBreaks    ?? DEFAULT_DATA.lunchBreaks,
-        triageSlots:    d.triageSlots    ?? DEFAULT_DATA.triageSlots,
-        rules:          d.rules          ?? DEFAULT_DATA.rules,
-        patchingAgent:  d.patchingAgent  ?? DEFAULT_DATA.patchingAgent,
-        patchWeek:      d.patchWeek      ?? DEFAULT_DATA.patchWeek,
-        agentPasswords: d.agentPasswords ?? DEFAULT_DATA.agentPasswords,
-        onLeave:        d.onLeave        ?? DEFAULT_DATA.onLeave,
+        agents:            d.agents            ?? DEFAULT_DATA.agents,
+        agentBreakVisible: d.agentBreakVisible ?? {},
+        coffeeBreaks:      d.coffeeBreaks      ?? DEFAULT_DATA.coffeeBreaks,
+        lunchBreaks:       d.lunchBreaks       ?? DEFAULT_DATA.lunchBreaks,
+        triageSlots:       d.triageSlots       ?? DEFAULT_DATA.triageSlots,
+        rules:             d.rules             ?? DEFAULT_DATA.rules,
+        patchingAgent:     d.patchingAgent     ?? DEFAULT_DATA.patchingAgent,
+        patchWeek:         d.patchWeek         ?? DEFAULT_DATA.patchWeek,
+        agentPasswords:    d.agentPasswords    ?? DEFAULT_DATA.agentPasswords,
+        onLeave:           d.onLeave           ?? DEFAULT_DATA.onLeave,
       };
-      if(!hadPasswords) await setDoc(DOC_REF, DATA);
+      if(!d.agentPasswords) await setDoc(DOC_REF, DATA);
     } else {
       await setDoc(DOC_REF, DEFAULT_DATA);
     }
@@ -942,32 +753,28 @@ function attachRealtimeListener(){
     if(!snap.exists()) return;
     const d = snap.data();
     DATA = {
-      agents:         d.agents         ?? DEFAULT_DATA.agents,
-      coffeeBreaks:   d.coffeeBreaks   ?? DEFAULT_DATA.coffeeBreaks,
-      lunchBreaks:    d.lunchBreaks    ?? DEFAULT_DATA.lunchBreaks,
-      triageSlots:    d.triageSlots    ?? DEFAULT_DATA.triageSlots,
-      rules:          d.rules          ?? DEFAULT_DATA.rules,
-      patchingAgent:  d.patchingAgent  ?? DEFAULT_DATA.patchingAgent,
-      patchWeek:      d.patchWeek      ?? DEFAULT_DATA.patchWeek,
-      agentPasswords: d.agentPasswords ?? DEFAULT_DATA.agentPasswords,
-      onLeave:        d.onLeave        ?? DEFAULT_DATA.onLeave,
+      agents:            d.agents            ?? DEFAULT_DATA.agents,
+      agentBreakVisible: d.agentBreakVisible ?? {},
+      coffeeBreaks:      d.coffeeBreaks      ?? DEFAULT_DATA.coffeeBreaks,
+      lunchBreaks:       d.lunchBreaks       ?? DEFAULT_DATA.lunchBreaks,
+      triageSlots:       d.triageSlots       ?? DEFAULT_DATA.triageSlots,
+      rules:             d.rules             ?? DEFAULT_DATA.rules,
+      patchingAgent:     d.patchingAgent     ?? DEFAULT_DATA.patchingAgent,
+      patchWeek:         d.patchWeek         ?? DEFAULT_DATA.patchWeek,
+      agentPasswords:    d.agentPasswords    ?? DEFAULT_DATA.agentPasswords,
+      onLeave:           d.onLeave           ?? DEFAULT_DATA.onLeave,
     };
     render();
-  }, (err) => {
-    console.warn('Realtime listener error:', err.message);
-  });
+  }, (err) => console.warn('Realtime listener error:', err.message));
 }
 
 async function saveData(){
   const el = document.getElementById('last-update');
-  if(!_firestoreAvailable){
-    el.textContent = '⚠ Offline — changes not saved';
-    return;
-  }
+  if(!_firestoreAvailable){ el.textContent = '⚠ Offline — changes not saved'; return; }
   try {
     await setDoc(DOC_REF, DATA);
     el.textContent = 'Saved · ' + new Date().toLocaleTimeString();
-    setTimeout(()=>{ setStatusBar(); }, 3000);
+    setTimeout(setStatusBar, 3000);
   } catch(e) {
     el.textContent = '⚠ Save failed: ' + e.message;
     console.error('Firestore save error:', e);
@@ -976,13 +783,10 @@ async function saveData(){
 
 function setStatusBar(){
   const el = document.getElementById('last-update');
-  if(!el) return;
-  el.textContent = _firestoreAvailable ? 'Live · synced via Firebase' : '⚠ Offline · using default data';
+  if(el) el.textContent = _firestoreAvailable ? 'Live · synced via Firebase' : '⚠ Offline · using default data';
 }
 
-// ═══════════════════════════════════════════════
-//  AUTH
-// ═══════════════════════════════════════════════
+// ─── AUTH ───
 function showAdminLogin(){
   document.getElementById('admin-email').value = '';
   document.getElementById('pw-input').value = '';
@@ -998,16 +802,15 @@ async function doAdminLogin(){
   const errEl = document.getElementById('lock-err');
   const btn   = document.getElementById('lock-unlock-btn');
   if(!email || !pw){ errEl.textContent = 'Enter email and password.'; return; }
-  btn.textContent = 'Signing in…';
-  btn.disabled = true;
-  errEl.textContent = '';
+  btn.textContent = 'Signing in…'; btn.disabled = true; errEl.textContent = '';
   try {
     await signInWithEmailAndPassword(auth, email, pw);
+    // onAuthStateChanged will handle the rest
   } catch(e) {
     const inp = document.getElementById('pw-input');
     inp.classList.add('error');
     setTimeout(()=>inp.classList.remove('error'), 500);
-    if(e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password' || e.code === 'auth/user-not-found'){
+    if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(e.code)){
       errEl.textContent = 'Incorrect email or password.';
     } else if(e.code === 'auth/too-many-requests'){
       errEl.textContent = 'Too many attempts. Try again later.';
@@ -1015,32 +818,31 @@ async function doAdminLogin(){
       errEl.textContent = e.message;
     }
   } finally {
-    btn.textContent = 'Unlock Admin';
-    btn.disabled = false;
+    btn.textContent = 'Unlock Admin'; btn.disabled = false;
   }
 }
 async function lockApp(){
   await signOut(auth);
-  isAdmin = false;
   applyMode();
   render();
 }
 function applyMode(){
-  const app = document.getElementById('app');
-  app.classList.toggle('admin-mode', isAdmin);
+  const admin = isAdminNow();
+  const app   = document.getElementById('app');
+  app.classList.toggle('admin-mode', admin);
   const badge = document.getElementById('mode-badge');
-  badge.textContent = isAdmin ? 'ADMIN' : 'VIEWER';
-  badge.className = 'mode-badge ' + (isAdmin ? 'admin' : 'viewer');
-  const adminBtn = document.getElementById('admin-btn');
-  if(adminBtn) adminBtn.textContent = isAdmin ? '🔒 Exit Admin' : '🔐 Admin';
+  badge.textContent = admin ? 'ADMIN' : 'VIEWER';
+  badge.className   = 'mode-badge ' + (admin ? 'admin' : 'viewer');
+  const btn = document.getElementById('admin-btn');
+  if(btn) btn.textContent = admin ? '🔒 Exit Admin' : '🔐 Admin';
 }
 
-// ═══════════════════════════════════════════════
-//  AGENT BREAK MODAL
-// ═══════════════════════════════════════════════
+// ─── AGENT BREAK MODAL ───
 function openAgentBreakModal(){
+  // Only show agents that are visible in breaks
+  const breakAgents = DATA.agents.filter(a => agentInBreaks(a));
   const sel = document.getElementById('abm-agent');
-  sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
+  sel.innerHTML = breakAgents.map(a=>`<option value="${a}">${a}</option>`).join('');
   document.getElementById('abm-pw').value = '';
   document.getElementById('abm-err').textContent = '';
   updateAbmQuota();
@@ -1050,17 +852,15 @@ function closeAgentBreakModal(){
   document.getElementById('agent-break-modal').classList.remove('open');
 }
 function agentCoffeeTotalMins(agentName){
-  return DATA.coffeeBreaks
-    .filter(b => b.agent === agentName)
-    .reduce((sum, b) => sum + (b.end - b.start), 0);
+  return DATA.coffeeBreaks.filter(b=>b.agent===agentName).reduce((s,b)=>s+(b.end-b.start),0);
 }
 function updateAbmQuota(){
   const agent = document.getElementById('abm-agent').value;
   const used  = agentCoffeeTotalMins(agent);
-  const pct   = Math.min(100, (used / 30) * 100);
+  const pct   = Math.min(100,(used/30)*100);
   const bar   = document.getElementById('abm-quota-bar');
-  bar.style.width = pct + '%';
-  bar.className   = 'quota-bar' + (used >= 30 ? ' full' : '');
+  bar.style.width = pct+'%';
+  bar.className   = 'quota-bar'+(used>=30?' full':'');
   document.getElementById('abm-quota-label').textContent = `${used} / 30 min`;
 }
 function confirmAgentBreak(){
@@ -1073,40 +873,29 @@ function confirmAgentBreak(){
   const passwords = DATA.agentPasswords || {};
   if(!passwords[agent] || passwords[agent] !== pw){
     const inp = document.getElementById('abm-pw');
-    inp.classList.add('error');
-    setTimeout(()=>inp.classList.remove('error'), 500);
-    errEl.textContent = '✕ Incorrect password.';
-    return;
+    inp.classList.add('error'); setTimeout(()=>inp.classList.remove('error'), 500);
+    errEl.textContent = '✕ Incorrect password.'; return;
   }
-  const [sh, sm] = startVal.split(':').map(Number);
-  const start    = sh * 60 + sm;
-  const end      = start + durMins;
+  const [sh,sm] = startVal.split(':').map(Number);
+  const start = sh*60+sm, end = start+durMins;
   const alreadyUsed = agentCoffeeTotalMins(agent);
-  if(alreadyUsed + durMins > 30){
-    errEl.textContent = `✕ You've used ${alreadyUsed} min. Adding ${durMins} min would exceed the 30-min daily limit.`;
-    return;
+  if(alreadyUsed+durMins>30){
+    errEl.textContent = `✕ You've used ${alreadyUsed} min. Adding ${durMins} min would exceed the 30-min daily limit.`; return;
   }
-  const overlapping = DATA.coffeeBreaks.filter(b => b.start < end && b.end > start);
-  if(overlapping.length >= 2){
-    errEl.textContent = '✕ 2 agents are already on break during that slot. Please choose a different time.';
-    return;
+  if(DATA.coffeeBreaks.filter(b=>b.start<end&&b.end>start).length>=2){
+    errEl.textContent = '✕ 2 agents are already on break during that slot. Please choose a different time.'; return;
   }
-  const duplicate = DATA.coffeeBreaks.find(b => b.agent === agent && b.start < end && b.end > start);
-  if(duplicate){
-    errEl.textContent = '✕ You already have a break overlapping this time slot.';
-    return;
+  if(DATA.coffeeBreaks.find(b=>b.agent===agent&&b.start<end&&b.end>start)){
+    errEl.textContent = '✕ You already have a break overlapping this time slot.'; return;
   }
   DATA.coffeeBreaks.push({ agent, start, end, agentAdded: true });
   DATA.coffeeBreaks.sort((a,b)=>a.start-b.start);
-  closeAgentBreakModal();
-  render();
-  saveData();
+  closeAgentBreakModal(); render(); saveData();
 }
 
-// ═══════════════════════════════════════════════
-//  ON LEAVE MODAL
-// ═══════════════════════════════════════════════
+// ─── ON LEAVE MODAL ───
 function openLeaveModal(){
+  // Leave modal shows ALL agents regardless of break visibility
   const sel = document.getElementById('lv-agent');
   sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
   document.getElementById('lv-note').value = '';
@@ -1116,29 +905,23 @@ function closeLeaveModal(){
   document.getElementById('leave-modal').classList.remove('open');
 }
 function confirmAddLeave(){
+  try { requireAdmin(); } catch(e){ return; }
   const agent = document.getElementById('lv-agent').value;
   const note  = document.getElementById('lv-note').value.trim();
   if(!DATA.onLeave) DATA.onLeave = [];
-  if(DATA.onLeave.find(l => l.agent === agent)){
-    closeLeaveModal();
-    return;
-  }
+  if(DATA.onLeave.find(l=>l.agent===agent)){ closeLeaveModal(); return; }
   DATA.onLeave.push({ agent, note });
-  closeLeaveModal();
-  render();
-  saveData();
+  closeLeaveModal(); render(); saveData();
 }
 
-// ═══════════════════════════════════════════════
-//  HELPERS
-// ═══════════════════════════════════════════════
+// ─── HELPERS ───
 const AV = [
-  {bg:'rgba(61,158,255,0.15)', fg:'#3d9eff'},
-  {bg:'rgba(0,229,160,0.15)',  fg:'#00e5a0'},
-  {bg:'rgba(181,122,255,0.15)',fg:'#b57aff'},
-  {bg:'rgba(255,179,64,0.15)', fg:'#ffb340'},
-  {bg:'rgba(0,212,212,0.15)',  fg:'#00d4d4'},
-  {bg:'rgba(255,79,79,0.15)',  fg:'#ff4f4f'},
+  {bg:'rgba(61,158,255,0.15)',  fg:'#3d9eff'},
+  {bg:'rgba(0,229,160,0.15)',   fg:'#00e5a0'},
+  {bg:'rgba(181,122,255,0.15)', fg:'#b57aff'},
+  {bg:'rgba(255,179,64,0.15)',  fg:'#ffb340'},
+  {bg:'rgba(0,212,212,0.15)',   fg:'#00d4d4'},
+  {bg:'rgba(255,79,79,0.15)',   fg:'#ff4f4f'},
 ];
 function avStyle(name){
   let hash=0; for(let c of name) hash=(hash*31+c.charCodeAt(0))&0xffff;
@@ -1146,31 +929,15 @@ function avStyle(name){
   return `background:${col.bg};color:${col.fg};`;
 }
 function initials(n){ return n.trim().split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2); }
-function shortName(n){
-  const parts = n.trim().split(' ');
-  return parts[0] + (parts[1] ? ' ' + parts[1][0] + '.' : '');
-}
+function shortName(n){ const p=n.trim().split(' '); return p[0]+(p[1]?' '+p[1][0]+'.':''); }
 const pad = n => String(n).padStart(2,'0');
 function fmtM(m){ return pad(Math.floor(m/60))+':'+pad(m%60); }
 function nowMins(){ const n=new Date(); return n.getHours()*60+n.getMinutes()+n.getSeconds()/60; }
-
 const DAY_START=480, DAY_END=1080, SPAN=DAY_END-DAY_START;
 function pct(m){ return Math.max(0,Math.min(100,(m-DAY_START)/SPAN*100)).toFixed(2); }
 function pctw(d){ return (d/SPAN*100).toFixed(2); }
 
-// triage color palette matching CSS nth-child colors
-const TRIAGE_COLORS = [
-  'rgba(61,158,255,0.75)',
-  'rgba(0,229,160,0.75)',
-  'rgba(181,122,255,0.75)',
-  'rgba(255,179,64,0.75)',
-  'rgba(0,212,212,0.75)',
-  'rgba(255,79,79,0.75)',
-];
-
-// ═══════════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════════
+// ─── RENDER ───
 function render(){
   renderBreaks('coffee-list', DATA.coffeeBreaks, 'coffee');
   renderBreaks('lunch-list',  DATA.lunchBreaks,  'lunch');
@@ -1194,7 +961,8 @@ function renderBreaks(containerId, breaks, type){
     const active = now>=b.start && now<b.end;
     const badgeClass = active ? 'badge-now' : (type==='coffee'?'badge-coffee':'badge-lunch');
     const badgeLabel = active ? '● NOW' : fmtM(b.start)+'–'+fmtM(b.end);
-    const lockIcon = b.agentAdded ? `<span class="agent-lock" title="Agent-added · only admin can remove">🔒</span>` : '';
+    const lockIcon   = b.agentAdded ? `<span class="agent-lock" title="Agent-added · only admin can remove">🔒</span>` : '';
+    const admin = isAdminNow();
     return `<div class="break-row" data-type="${type}" data-idx="${i}">
       <div class="avatar" style="${avStyle(b.agent)}">${initials(b.agent)}</div>
       <span class="break-name-display break-name">${b.agent}${b.agentAdded?'<span style="font-size:9px;color:var(--muted);margin-left:4px;">self</span>':''}</span>
@@ -1202,7 +970,7 @@ function renderBreaks(containerId, breaks, type){
       <input class="edit-field" type="time" value="${fmtM(b.start)}" data-action="break-start" data-type="${type}" data-idx="${i}" />
       <input class="edit-field" type="time" value="${fmtM(b.end)}" data-action="break-end" data-type="${type}" data-idx="${i}" />
       <span class="badge ${badgeClass}">${badgeLabel}</span>
-      ${isAdmin
+      ${admin
         ? `<button class="del-btn" data-action="break-delete" data-type="${type}" data-idx="${i}" title="Remove">✕</button>`
         : lockIcon}
     </div>`;
@@ -1210,55 +978,36 @@ function renderBreaks(containerId, breaks, type){
 }
 
 function renderTimeline(){
-  const now = nowMins();
-  const np  = pct(now);
-
-  // Collect all agents across breaks AND triage
+  const now = nowMins(), np = pct(now);
   const agents = [...new Set([
     ...DATA.coffeeBreaks.map(b=>b.agent),
     ...DATA.lunchBreaks.map(b=>b.agent),
     ...DATA.triageSlots.map(t=>t.agent),
   ])];
-
   const rows = agents.map(ag=>{
     const breakBars = [
       ...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),
       ...DATA.lunchBreaks .filter(b=>b.agent===ag).map(b=>({...b,type:'lunch'})),
-    ].map(b=>`<div class="tl-bar tl-${b.type}" style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%" title="${b.agent} ${b.type==='coffee'?'☕':'🍕'} ${fmtM(b.start)}–${fmtM(b.end)}"></div>`).join('');
-
-    const triageBars = DATA.triageSlots
-      .filter(t=>t.agent===ag)
-      .map(t=>{
-        const isNow = now >= t.start && now < t.end;
-        return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}" style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%" title="${t.agent} 🎯 Triage ${fmtM(t.start)}–${fmtM(t.end)}"></div>`;
-      }).join('');
-
-    return `<div class="tl-row">
-      <div class="tl-name">${ag}</div>
-      <div class="tl-track">${breakBars}${triageBars}<div class="tl-now" style="left:${np}%"></div></div>
-    </div>`;
+    ].map(b=>`<div class="tl-bar tl-${b.type}" style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%"></div>`).join('');
+    const triageBars = DATA.triageSlots.filter(t=>t.agent===ag).map(t=>{
+      const isNow = now>=t.start && now<t.end;
+      return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}" style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%"></div>`;
+    }).join('');
+    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${breakBars}${triageBars}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
-
   document.getElementById('tl-wrap').innerHTML = rows;
 }
 
 function renderTriageStrip(){
-  const now = nowMins();
+  const now   = nowMins();
   const strip = document.getElementById('triage-strip');
-  const badge = document.getElementById('strip-now-badge');
-  const nowSlot = DATA.triageSlots.find(t => now >= t.start && now < t.end);
-  if(badge){
-    if(nowSlot) badge.textContent = 'Now: ' + nowSlot.agent;
-    else if(now < 480) badge.textContent = 'Shift starts 08:00';
-    else badge.textContent = 'Shift ended';
-  }
   if(!strip) return;
-  strip.innerHTML = DATA.triageSlots.map(t => {
-    const isNow  = now >= t.start && now < t.end;
-    const isPast = now >= t.end;
+  strip.innerHTML = DATA.triageSlots.map(t=>{
+    const isNow  = now>=t.start && now<t.end;
+    const isPast = now>=t.end;
     const shortTime = t.time.replace(/(\d+):00/g,'$1').replace('–','-');
     return `<div class="ts-slot ${isNow?'ts-now':isPast?'ts-past':''}">
-      ${isNow ? '<div class="ts-now-dot"></div>' : ''}
+      ${isNow?'<div class="ts-now-dot"></div>':''}
       <div class="ts-slot-time">${shortTime}</div>
       <div class="ts-slot-name" title="${t.agent}">${shortName(t.agent)}</div>
     </div>`;
@@ -1278,10 +1027,10 @@ function renderTriage(){
 }
 
 function renderPatching(){
-  document.getElementById('patch-display').textContent  = DATA.patchingAgent || '—';
-  document.getElementById('patch-input').value           = DATA.patchingAgent || '';
-  document.getElementById('patch-week-badge').textContent= DATA.patchWeek    || 'Week —';
-  document.getElementById('m-patch-week-sub').textContent= DATA.patchWeek    || 'this week';
+  document.getElementById('patch-display').textContent   = DATA.patchingAgent || '—';
+  document.getElementById('patch-input').value            = DATA.patchingAgent || '';
+  document.getElementById('patch-week-badge').textContent = DATA.patchWeek    || 'Week —';
+  document.getElementById('m-patch-week-sub').textContent = DATA.patchWeek    || 'this week';
 }
 
 function renderRules(){
@@ -1297,18 +1046,26 @@ function renderRules(){
 function renderAgents(){
   const passwords = DATA.agentPasswords || {};
   document.getElementById('agents-grid').innerHTML = DATA.agents.map((a,i)=>{
-    const pw = passwords[a] || '';
+    const pw      = passwords[a] || '';
+    const visible = agentInBreaks(a);
     return `
     <div class="agent-item">
       <div class="avatar" style="${avStyle(a)};width:24px;height:24px;font-size:9px;flex-shrink:0;">${initials(a)}</div>
       <span class="agent-item-name">${a}</span>
-      <input class="agent-name-input" value="${a}" data-action="agent-name" data-idx="${i}" />
+      <input class="agent-name-input" value="${a}" data-action="agent-name" data-idx="${i}" data-oldname="${a}" />
       <div class="agent-pw-wrap">
         <input class="agent-pw-input" type="password" value="${pw}"
           placeholder="set password"
           data-action="agent-pw" data-agent="${a}" data-idx="${i}"
           title="Break booking password for ${a}" />
         <button class="pw-eye" data-action="agent-pw-toggle" data-idx="${i}" title="Show/hide">👁</button>
+      </div>
+      <div class="break-vis-wrap" title="Show in break dropdowns">
+        <label class="break-vis-toggle">
+          <input type="checkbox" ${visible?'checked':''} data-action="agent-break-vis" data-agent="${a}" data-idx="${i}" />
+          <span class="break-vis-slider"></span>
+        </label>
+        <span class="break-vis-label">breaks</span>
       </div>
       <button class="del-btn" data-action="agent-delete" data-idx="${i}" title="Remove">✕</button>
     </div>`;
@@ -1318,16 +1075,13 @@ function renderAgents(){
 function renderLeaveList(){
   const el = document.getElementById('leave-list');
   if(!el) return;
-  if(!DATA.onLeave || !DATA.onLeave.length){
-    el.innerHTML = '<div class="empty">No one on leave</div>';
-    return;
-  }
+  if(!DATA.onLeave || !DATA.onLeave.length){ el.innerHTML='<div class="empty">No one on leave</div>'; return; }
   el.innerHTML = DATA.onLeave.map((l,i)=>`
     <div class="break-row">
       <div class="avatar" style="${avStyle(l.agent)}">${initials(l.agent)}</div>
       <div style="flex:1;">
         <div class="break-name">${l.agent}</div>
-        ${l.note ? `<div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${l.note}</div>` : ''}
+        ${l.note?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${l.note}</div>`:''}
       </div>
       <button class="del-btn" data-action="leave-delete" data-idx="${i}" title="Remove" style="display:block;">✕</button>
     </div>`).join('');
@@ -1337,64 +1091,64 @@ function renderLeavePanel(){
   const el = document.getElementById('leave-panel-list');
   if(!el) return;
   if(!DATA.onLeave || !DATA.onLeave.length){
-    el.innerHTML = '<div style="font-size:11px;color:var(--muted);font-family:var(--mono);">—</div>';
-    return;
+    el.innerHTML='<div style="font-size:11px;color:var(--muted);font-family:var(--mono);">—</div>'; return;
   }
   el.innerHTML = DATA.onLeave.map(l=>`
     <div class="leave-entry">
       <div class="avatar" style="${avStyle(l.agent)};width:22px;height:22px;font-size:8px;flex-shrink:0;">${initials(l.agent)}</div>
       <div>
         <div class="leave-entry-name">${shortName(l.agent)}</div>
-        ${l.note ? `<div class="leave-entry-note">${l.note}</div>` : ''}
+        ${l.note?`<div class="leave-entry-note">${l.note}</div>`:''}
       </div>
     </div>`).join('');
 }
 
 function renderMetrics(){
-  const now  = nowMins();
-  const afk  = [...new Set([...DATA.coffeeBreaks,...DATA.lunchBreaks]
-               .filter(b=>now>=b.start&&now<b.end).map(b=>b.agent))];
-
+  const now = nowMins();
+  const afk = [...new Set([...DATA.coffeeBreaks,...DATA.lunchBreaks]
+    .filter(b=>now>=b.start&&now<b.end).map(b=>b.agent))];
   const activeToday = new Set([
-    ...DATA.coffeeBreaks.map(b => b.agent),
-    ...DATA.lunchBreaks.map(b => b.agent),
+    ...DATA.coffeeBreaks.map(b=>b.agent),
+    ...DATA.lunchBreaks.map(b=>b.agent),
   ]);
-
   const triN = DATA.triageSlots.find(t=>now>=t.start&&now<t.end);
-  document.getElementById('m-total').textContent    = activeToday.size;
-  document.getElementById('m-afk').textContent     = afk.length;
-  document.getElementById('m-afk-sub').textContent = afk.length
-    ? afk.slice(0,5).map(n=>n.split(' ')[0]).join(', ') : 'none right now';
-  document.getElementById('m-triage').textContent   = triN ? triN.agent : '—';
-  document.getElementById('m-patch-val').textContent= DATA.patchingAgent || '—';
+  document.getElementById('m-total').textContent     = activeToday.size;
+  document.getElementById('m-afk').textContent      = afk.length;
+  document.getElementById('m-afk-sub').textContent  = afk.length ? afk.slice(0,5).map(n=>n.split(' ')[0]).join(', ') : 'none right now';
+  document.getElementById('m-triage').textContent    = triN ? triN.agent : '—';
+  document.getElementById('m-patch-val').textContent = DATA.patchingAgent || '—';
   document.getElementById('m-patch-week-sub').textContent = DATA.patchWeek || 'this week';
 }
 
 function populateAgentSelect(){
-  const sel = document.getElementById('m-agent');
-  sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
+  // Admin "add break" modal: only agents visible in breaks
+  const breakAgents = DATA.agents.filter(a => agentInBreaks(a));
+  document.getElementById('m-agent').innerHTML =
+    breakAgents.map(a=>`<option value="${a}">${a}</option>`).join('');
 }
 
-// ═══════════════════════════════════════════════
-//  EDIT ACTIONS
-// ═══════════════════════════════════════════════
+// ─── EDIT ACTIONS (all guarded) ───
 function updateBreak(type, idx, field, val){
+  try { requireAdmin(); } catch(e){ render(); return; }
   const arr = type==='coffee' ? DATA.coffeeBreaks : DATA.lunchBreaks;
   arr[idx][field] = val;
   render(); saveData();
 }
 function updateBreakTime(type, idx, field, val){
+  try { requireAdmin(); } catch(e){ render(); return; }
   const [h,m] = val.split(':').map(Number);
   const arr = type==='coffee' ? DATA.coffeeBreaks : DATA.lunchBreaks;
   arr[idx][field] = h*60+m;
   render(); saveData();
 }
 function deleteBreak(type, idx){
+  try { requireAdmin(); } catch(e){ return; }
   const arr = type==='coffee' ? DATA.coffeeBreaks : DATA.lunchBreaks;
   arr.splice(idx,1);
   render(); saveData();
 }
 function addAgent(){
+  try { requireAdmin(); } catch(e){ return; }
   const name = 'New Agent';
   DATA.agents.push(name);
   if(!DATA.agentPasswords) DATA.agentPasswords = {};
@@ -1402,186 +1156,161 @@ function addAgent(){
   render(); saveData();
 }
 function removeAgent(idx){
+  try { requireAdmin(); } catch(e){ return; }
   DATA.agents.splice(idx,1);
   render(); saveData();
 }
 
-// ═══════════════════════════════════════════════
-//  EXCEL IMPORT
-// ═══════════════════════════════════════════════
+// ─── EXCEL IMPORT ───
 function openExcelModal(){
   document.getElementById('excel-paste').value = '';
   document.getElementById('excel-preview').textContent = '';
   document.getElementById('excel-modal').classList.add('open');
   setTimeout(()=>document.getElementById('excel-paste').focus(), 100);
 }
-function closeExcelModal(){
-  document.getElementById('excel-modal').classList.remove('open');
-}
+function closeExcelModal(){ document.getElementById('excel-modal').classList.remove('open'); }
 function previewExcel(){
   const raw = document.getElementById('excel-paste').value.trim();
   if(!raw){ document.getElementById('excel-preview').textContent=''; return; }
   const { coffeeBreaks, lunchBreaks, triageSlots, errors } = parseExcelBreaks(raw);
   const total = coffeeBreaks.length + lunchBreaks.length + triageSlots.length;
-  const prev = document.getElementById('excel-preview');
+  const prev  = document.getElementById('excel-preview');
   if(total===0){
     prev.style.color='var(--red)';
-    prev.textContent = errors.length ? '\u26a0 '+errors[0] : '\u26a0 No break rows detected. Check your data.';
+    prev.textContent = errors.length ? '⚠ '+errors[0] : '⚠ No break rows detected. Check your data.';
   } else {
     prev.style.color='var(--green)';
-    const parts = [];
+    const parts=[];
     if(coffeeBreaks.length) parts.push(coffeeBreaks.length+' coffee break'+(coffeeBreaks.length!==1?'s':''));
     if(lunchBreaks.length)  parts.push(lunchBreaks.length+' lunch break'+(lunchBreaks.length!==1?'s':''));
     if(triageSlots.length)  parts.push(triageSlots.length+' triage slot'+(triageSlots.length!==1?'s':''));
-    prev.textContent = '\u2713 Detected '+parts.join(', ')+(errors.length?' \u00b7 \u26a0 '+errors.length+' skipped row(s)':'');
+    prev.textContent = '✓ Detected '+parts.join(', ')+(errors.length?' · ⚠ '+errors.length+' skipped row(s)':'');
   }
 }
 function parseExcelBreaks(raw){
   const errors=[];
   const lines = raw.split('\n').map(l=>l.replace(/\r/,'')).filter(l=>l.trim());
-  if(lines.length < 2){ errors.push('Not enough rows'); return {coffeeBreaks:[],lunchBreaks:[],triageSlots:[],errors}; }
-  const dataLines = lines.slice(1);
-  const coffeeRaw=[], lunchRaw=[], triageRaw=[];
+  if(lines.length<2){ errors.push('Not enough rows'); return {coffeeBreaks:[],lunchBreaks:[],triageSlots:[],errors}; }
+  const dataLines=lines.slice(1), coffeeRaw=[], lunchRaw=[], triageRaw=[];
   for(const line of dataLines){
-    const cols = line.split('\t');
-    const timeStr = (cols[0]||'').trim();
-    if(!timeStr || !/\d/.test(timeStr)) continue;
-    const timeMatch = timeStr.match(/(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/);
+    const cols=line.split('\t');
+    const timeStr=(cols[0]||'').trim();
+    if(!timeStr||!/\d/.test(timeStr)) continue;
+    const timeMatch=timeStr.match(/(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/);
     if(!timeMatch){ errors.push('Bad time: '+timeStr); continue; }
-    const start = parseInt(timeMatch[1])*60 + parseInt(timeMatch[2]);
-    const end   = parseInt(timeMatch[3])*60 + parseInt(timeMatch[4]);
-    const dur   = end - start;
-    const agentCols = cols.slice(1).map(c=>c.trim()).filter(c=>c && c.length>1);
+    const start=parseInt(timeMatch[1])*60+parseInt(timeMatch[2]);
+    const end=parseInt(timeMatch[3])*60+parseInt(timeMatch[4]);
+    const dur=end-start;
+    const agentCols=cols.slice(1).map(c=>c.trim()).filter(c=>c&&c.length>1);
     if(!agentCols.length) continue;
     for(const agent of agentCols){
-      const entry = { agent, start, end };
-      if(dur <= 15)       coffeeRaw.push(entry);
-      else if(dur <= 45)  lunchRaw.push(entry);
-      else                triageRaw.push(entry);
+      const entry={agent,start,end};
+      if(dur<=15) coffeeRaw.push(entry);
+      else if(dur<=45) lunchRaw.push(entry);
+      else triageRaw.push(entry);
     }
   }
   function mergeConsecutive(entries){
     if(!entries.length) return [];
-    const sorted = [...entries].sort((a,b)=> a.agent.localeCompare(b.agent)||a.start-b.start);
-    const merged = [];
-    let cur = {...sorted[0]};
+    const sorted=[...entries].sort((a,b)=>a.agent.localeCompare(b.agent)||a.start-b.start);
+    const merged=[]; let cur={...sorted[0]};
     for(let i=1;i<sorted.length;i++){
-      const b = sorted[i];
-      if(b.agent===cur.agent && b.start===cur.end){ cur.end = b.end; }
-      else { merged.push(cur); cur = {...b}; }
+      const b=sorted[i];
+      if(b.agent===cur.agent&&b.start===cur.end) cur.end=b.end;
+      else { merged.push(cur); cur={...b}; }
     }
-    merged.push(cur);
-    return merged;
+    merged.push(cur); return merged;
   }
-  const coffeeBreaks = mergeConsecutive(coffeeRaw);
-  const lunchBreaks  = mergeConsecutive(lunchRaw);
-  const triageSlots = [];
+  const coffeeBreaks=mergeConsecutive(coffeeRaw), lunchBreaks=mergeConsecutive(lunchRaw);
+  const triageSlots=[];
   for(const b of mergeConsecutive(triageRaw)){
-    const timeLabel = fmtM(b.start)+'–'+fmtM(b.end);
-    const existing = triageSlots.find(t=>t.start===b.start&&t.end===b.end);
-    if(existing){ existing.agent = b.agent; }
-    else { triageSlots.push({ time: timeLabel, agent: b.agent, start: b.start, end: b.end }); }
+    const existing=triageSlots.find(t=>t.start===b.start&&t.end===b.end);
+    if(existing) existing.agent=b.agent;
+    else triageSlots.push({time:fmtM(b.start)+'–'+fmtM(b.end),agent:b.agent,start:b.start,end:b.end});
   }
   triageSlots.sort((a,b)=>a.start-b.start);
-  return { coffeeBreaks, lunchBreaks, triageSlots, errors };
+  return {coffeeBreaks,lunchBreaks,triageSlots,errors};
 }
 function confirmExcelImport(){
-  const raw = document.getElementById('excel-paste').value.trim();
+  try { requireAdmin(); } catch(e){ return; }
+  const raw=document.getElementById('excel-paste').value.trim();
   if(!raw){ alert('Paste some data first.'); return; }
-  const { coffeeBreaks, lunchBreaks, triageSlots, errors } = parseExcelBreaks(raw);
-  const total = coffeeBreaks.length + lunchBreaks.length + triageSlots.length;
+  const {coffeeBreaks,lunchBreaks,triageSlots,errors}=parseExcelBreaks(raw);
+  const total=coffeeBreaks.length+lunchBreaks.length+triageSlots.length;
   if(total===0){ alert('No break rows detected. Check your data format.'); return; }
-  const mode = document.querySelector('input[name="import-mode"]:checked').value;
+  const mode=document.querySelector('input[name="import-mode"]:checked').value;
   if(mode==='replace'){
-    DATA.coffeeBreaks = coffeeBreaks;
-    DATA.lunchBreaks  = lunchBreaks;
+    DATA.coffeeBreaks=coffeeBreaks; DATA.lunchBreaks=lunchBreaks;
     if(triageSlots.length){
-      DATA.triageSlots = DATA.triageSlots.map(t=>{
-        const match = triageSlots.find(s=>s.start===t.start&&s.end===t.end);
-        return match ? {...t, agent: match.agent} : t;
+      DATA.triageSlots=DATA.triageSlots.map(t=>{
+        const match=triageSlots.find(s=>s.start===t.start&&s.end===t.end);
+        return match?{...t,agent:match.agent}:t;
       });
-      triageSlots.forEach(s=>{
-        if(!DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end)){
-          DATA.triageSlots.push(s);
-        }
-      });
+      triageSlots.forEach(s=>{ if(!DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end)) DATA.triageSlots.push(s); });
       DATA.triageSlots.sort((a,b)=>a.start-b.start);
     }
   } else {
-    const key = b => b.agent+'|'+b.start;
-    const existingCoffeeKeys = new Set(DATA.coffeeBreaks.map(key));
-    const existingLunchKeys  = new Set(DATA.lunchBreaks.map(key));
-    coffeeBreaks.forEach(b=>{ if(!existingCoffeeKeys.has(key(b))) DATA.coffeeBreaks.push(b); });
-    lunchBreaks .forEach(b=>{ if(!existingLunchKeys .has(key(b))) DATA.lunchBreaks .push(b); });
+    const key=b=>b.agent+'|'+b.start;
+    const eck=new Set(DATA.coffeeBreaks.map(key)), elk=new Set(DATA.lunchBreaks.map(key));
+    coffeeBreaks.forEach(b=>{ if(!eck.has(key(b))) DATA.coffeeBreaks.push(b); });
+    lunchBreaks .forEach(b=>{ if(!elk.has(key(b))) DATA.lunchBreaks.push(b); });
     triageSlots.forEach(s=>{
-      const existing = DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end);
-      if(existing) existing.agent = s.agent;
+      const ex=DATA.triageSlots.find(t=>t.start===s.start&&t.end===s.end);
+      if(ex) ex.agent=s.agent;
       else { DATA.triageSlots.push(s); DATA.triageSlots.sort((a,b)=>a.start-b.start); }
     });
   }
-  closeExcelModal();
-  render(); saveData();
+  closeExcelModal(); render(); saveData();
 }
 
-// ═══════════════════════════════════════════════
-//  ADD BREAK MODAL
-// ═══════════════════════════════════════════════
+// ─── ADD BREAK MODAL ───
 function openModal(type){
-  activeModalType = type;
-  document.getElementById('m-type').value = type;
+  try { requireAdmin(); } catch(e){ return; }
+  activeModalType=type;
+  document.getElementById('m-type').value=type;
   document.getElementById('add-modal').classList.add('open');
 }
-function closeModal(){
-  document.getElementById('add-modal').classList.remove('open');
-}
+function closeModal(){ document.getElementById('add-modal').classList.remove('open'); }
 function confirmAddBreak(){
-  const agent  = document.getElementById('m-agent').value;
-  const type   = document.getElementById('m-type').value;
-  const sVal   = document.getElementById('m-start').value;
-  const eVal   = document.getElementById('m-end').value;
+  try { requireAdmin(); } catch(e){ closeModal(); return; }
+  const agent=document.getElementById('m-agent').value;
+  const type =document.getElementById('m-type').value;
+  const sVal =document.getElementById('m-start').value;
+  const eVal =document.getElementById('m-end').value;
   if(!agent||!sVal||!eVal){ alert('Fill all fields.'); return; }
-  const [sh,sm] = sVal.split(':').map(Number);
-  const [eh,em] = eVal.split(':').map(Number);
-  const entry = { agent, start: sh*60+sm, end: eh*60+em };
+  const [sh,sm]=sVal.split(':').map(Number), [eh,em]=eVal.split(':').map(Number);
+  const entry={agent,start:sh*60+sm,end:eh*60+em};
   if(type==='coffee') DATA.coffeeBreaks.push(entry);
   else DATA.lunchBreaks.push(entry);
-  closeModal();
-  render(); saveData();
+  closeModal(); render(); saveData();
 }
-document.getElementById('m-type').addEventListener('change', function(){
-  activeModalType = this.value;
-});
+document.getElementById('m-type').addEventListener('change', function(){ activeModalType=this.value; });
 
-// ═══════════════════════════════════════════════
-//  CLOCK
-// ═══════════════════════════════════════════════
+// ─── CLOCK ───
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
 function updateClock(){
   const n=new Date();
-  document.getElementById('clock').textContent = pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
-  document.getElementById('date-str').textContent = DAYS[n.getDay()]+', '+n.getDate()+' '+MONTHS[n.getMonth()]+' '+n.getFullYear();
+  document.getElementById('clock').textContent=pad(n.getHours())+':'+pad(n.getMinutes())+':'+pad(n.getSeconds());
+  document.getElementById('date-str').textContent=DAYS[n.getDay()]+', '+n.getDate()+' '+MONTHS[n.getMonth()]+' '+n.getFullYear();
 }
-setInterval(updateClock, 1000);
-updateClock();
-setInterval(render, 30000);
+setInterval(updateClock,1000); updateClock();
+setInterval(render,30000);
 
-// ═══════════════════════════════════════════════
-//  EVENT WIRING
-// ═══════════════════════════════════════════════
+// ─── EVENT WIRING ───
 document.getElementById('lock-unlock-btn').addEventListener('click', doAdminLogin);
 document.getElementById('lock-back-btn').addEventListener('click', cancelAdminLogin);
-document.getElementById('pw-input').addEventListener('keydown', e => { if(e.key==='Enter') doAdminLogin(); });
-document.getElementById('admin-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('pw-input').focus(); });
-document.getElementById('admin-btn').addEventListener('click', () => { isAdmin ? lockApp() : showAdminLogin(); });
+document.getElementById('pw-input').addEventListener('keydown', e=>{ if(e.key==='Enter') doAdminLogin(); });
+document.getElementById('admin-email').addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('pw-input').focus(); });
+document.getElementById('admin-btn').addEventListener('click', ()=>{ isAdminNow() ? lockApp() : showAdminLogin(); });
 document.getElementById('my-break-btn').addEventListener('click', openAgentBreakModal);
 document.getElementById('abm-cancel-btn').addEventListener('click', closeAgentBreakModal);
 document.getElementById('abm-ok-btn').addEventListener('click', confirmAgentBreak);
 document.getElementById('abm-agent').addEventListener('change', updateAbmQuota);
-document.getElementById('abm-pw').addEventListener('keydown', e => { if(e.key==='Enter') confirmAgentBreak(); });
+document.getElementById('abm-pw').addEventListener('keydown', e=>{ if(e.key==='Enter') confirmAgentBreak(); });
 document.getElementById('save-btn').addEventListener('click', saveData);
-document.getElementById('add-coffee-btn').addEventListener('click', () => openModal('coffee'));
-document.getElementById('add-lunch-btn').addEventListener('click', () => openModal('lunch'));
+document.getElementById('add-coffee-btn').addEventListener('click', ()=>openModal('coffee'));
+document.getElementById('add-lunch-btn').addEventListener('click',  ()=>openModal('lunch'));
 document.getElementById('import-excel-btn').addEventListener('click', openExcelModal);
 document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
 document.getElementById('modal-ok-btn').addEventListener('click', confirmAddBreak);
@@ -1592,20 +1321,18 @@ document.getElementById('excel-paste').addEventListener('focus', function(){ thi
 document.getElementById('excel-paste').addEventListener('blur',  function(){ this.style.borderColor='var(--border2)'; });
 document.getElementById('add-agent-btn').addEventListener('click', addAgent);
 document.getElementById('patch-input').addEventListener('input', function(){
-  DATA.patchingAgent = this.value;
-  renderMetrics();
-  saveData();
+  if(!isAdminNow()) return;
+  DATA.patchingAgent=this.value;
+  renderMetrics(); saveData();
 });
 document.getElementById('add-leave-btn').addEventListener('click', openLeaveModal);
 document.getElementById('lv-cancel-btn').addEventListener('click', closeLeaveModal);
 document.getElementById('lv-ok-btn').addEventListener('click', confirmAddLeave);
-document.getElementById('lv-note').addEventListener('keydown', e => { if(e.key==='Enter') confirmAddLeave(); });
+document.getElementById('lv-note').addEventListener('keydown', e=>{ if(e.key==='Enter') confirmAddLeave(); });
 
-// ─── DELEGATED EVENTS ───
+// ─── DELEGATED ───
 document.getElementById('app').addEventListener('change', e => {
-  const el  = e.target;
-  const act = el.dataset.action;
-  const idx = parseInt(el.dataset.idx);
+  const el=e.target, act=el.dataset.action, idx=parseInt(el.dataset.idx);
   if(!act) return;
   if(act==='break-name'){
     updateBreak(el.dataset.type, idx, 'agent', el.value);
@@ -1614,59 +1341,67 @@ document.getElementById('app').addEventListener('change', e => {
   } else if(act==='break-end'){
     updateBreakTime(el.dataset.type, idx, 'end', el.value);
   } else if(act==='triage-agent'){
-    DATA.triageSlots[idx].agent = el.value;
+    try { requireAdmin(); } catch(e){ render(); return; }
+    DATA.triageSlots[idx].agent=el.value;
     renderMetrics(); renderTriageStrip(); saveData();
   } else if(act==='rule-edit'){
-    DATA.rules[idx] = el.value;
-    saveData();
+    try { requireAdmin(); } catch(e){ render(); return; }
+    DATA.rules[idx]=el.value; saveData();
   } else if(act==='agent-name'){
-    DATA.agents[idx] = el.value;
-    if(DATA.agentPasswords && DATA.agentPasswords[el.dataset.oldname] !== undefined){
-      DATA.agentPasswords[el.value] = DATA.agentPasswords[el.dataset.oldname];
-      delete DATA.agentPasswords[el.dataset.oldname];
+    try { requireAdmin(); } catch(e){ render(); return; }
+    const oldName=el.dataset.oldname;
+    DATA.agents[idx]=el.value;
+    if(DATA.agentPasswords && oldName in DATA.agentPasswords){
+      DATA.agentPasswords[el.value]=DATA.agentPasswords[oldName];
+      delete DATA.agentPasswords[oldName];
+    }
+    if(DATA.agentBreakVisible && oldName in DATA.agentBreakVisible){
+      DATA.agentBreakVisible[el.value]=DATA.agentBreakVisible[oldName];
+      delete DATA.agentBreakVisible[oldName];
     }
     render(); saveData();
   } else if(act==='agent-pw'){
-    if(!DATA.agentPasswords) DATA.agentPasswords = {};
-    DATA.agentPasswords[el.dataset.agent] = el.value;
+    try { requireAdmin(); } catch(e){ return; }
+    if(!DATA.agentPasswords) DATA.agentPasswords={};
+    DATA.agentPasswords[el.dataset.agent]=el.value;
     saveData();
+  } else if(act==='agent-break-vis'){
+    try { requireAdmin(); } catch(e){ render(); return; }
+    if(!DATA.agentBreakVisible) DATA.agentBreakVisible={};
+    DATA.agentBreakVisible[el.dataset.agent]=el.checked;
+    render(); saveData();
   }
 });
 
 document.getElementById('app').addEventListener('click', e => {
-  const el  = e.target.closest('[data-action]');
+  const el=e.target.closest('[data-action]');
   if(!el) return;
-  const act = el.dataset.action;
-  const idx = parseInt(el.dataset.idx);
+  const act=el.dataset.action, idx=parseInt(el.dataset.idx);
   if(act==='break-delete'){
     deleteBreak(el.dataset.type, idx);
   } else if(act==='rule-delete'){
-    DATA.rules.splice(idx, 1);
-    render(); saveData();
+    try { requireAdmin(); } catch(e){ return; }
+    DATA.rules.splice(idx,1); render(); saveData();
   } else if(act==='agent-delete'){
     removeAgent(idx);
   } else if(act==='leave-delete'){
-    DATA.onLeave.splice(idx, 1);
-    render(); saveData();
+    try { requireAdmin(); } catch(e){ return; }
+    DATA.onLeave.splice(idx,1); render(); saveData();
   } else if(act==='agent-pw-toggle'){
-    const wrap = el.closest('.agent-pw-wrap');
-    const inp  = wrap.querySelector('.agent-pw-input');
-    inp.type   = inp.type === 'password' ? 'text' : 'password';
-    el.textContent = inp.type === 'password' ? '👁' : '🙈';
+    const wrap=el.closest('.agent-pw-wrap');
+    const inp=wrap.querySelector('.agent-pw-input');
+    inp.type=inp.type==='password'?'text':'password';
+    el.textContent=inp.type==='password'?'👁':'🙈';
   }
 });
 
-// ═══════════════════════════════════════════════
-//  BOOT
-// ═══════════════════════════════════════════════
-isAdmin = false;
+// ─── BOOT ───
 applyMode();
 render();
-loadData().then(() => attachRealtimeListener());
+loadData().then(()=>attachRealtimeListener());
 
 onAuthStateChanged(auth, (user) => {
-  isAdmin = !!user;
-  document.getElementById('lock-screen').style.display = 'none';
+  document.getElementById('lock-screen').style.display='none';
   applyMode();
   render();
 });
