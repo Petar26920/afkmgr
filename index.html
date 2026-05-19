@@ -630,12 +630,30 @@ const db     = getFirestore(fbApp);
 const auth   = getAuth(fbApp);
 const DOC_REF = doc(db, 'afk', 'state');
 
-// ─── SECURITY: derive admin purely from Firebase Auth, never from a mutable JS flag ───
-// All mutating operations call requireAdmin() which reads auth.currentUser at call-time.
+// ─── SECURITY ────────────────────────────────────────────────────────────────
+// Admin status is derived ONLY from auth.currentUser at call-time.
+// The #app element's classList is set exclusively by applyMode(), which is
+// triggered only by the Firebase onAuthStateChanged callback.
+//
+// To prevent console bypass (app.classList.toggle("admin-mode", true)):
+// A MutationObserver watches #app and immediately strips admin-mode if
+// auth.currentUser is null. This makes the CSS-only UI protection tamper-evident.
+// All write paths still call requireAdmin() which re-checks auth.currentUser,
+// so even if the class were briefly applied, every Firestore write would fail.
+// ─────────────────────────────────────────────────────────────────────────────
 function isAdminNow(){ return !!auth.currentUser; }
 function requireAdmin(){
   if(!isAdminNow()) throw new Error('Not authenticated as admin');
 }
+
+// Guard #app classList against console injection
+const appEl = document.getElementById('app');
+const _classObserver = new MutationObserver(() => {
+  if(appEl.classList.contains('admin-mode') && !isAdminNow()){
+    appEl.classList.remove('admin-mode');
+  }
+});
+_classObserver.observe(appEl, { attributes: true, attributeFilter: ['class'] });
 
 const DEFAULT_DATA = {
   agents: [
@@ -645,7 +663,6 @@ const DEFAULT_DATA = {
     'Dimitrije Milosavljevic','David Kostic','Isidora Stevanovic',
     'Petar Spasic','Radislav Lazarevic',
   ],
-  // agentBreakVisible[name] = true means shown in break dropdowns (default true)
   agentBreakVisible: {},
   coffeeBreaks: [
     {agent:'Bojan Pavlovic',   start:660, end:690},
@@ -712,10 +729,9 @@ let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let activeModalType = 'coffee';
 let _firestoreAvailable = true;
 
-// Helper: is an agent visible in break dropdowns?
 function agentInBreaks(name){
   const v = DATA.agentBreakVisible;
-  return v && name in v ? v[name] : true; // default true
+  return v && name in v ? v[name] : true;
 }
 
 async function loadData(){
@@ -769,6 +785,12 @@ function attachRealtimeListener(){
 }
 
 async function saveData(){
+  // Hard server-side guard: Firestore Security Rules enforce this independently,
+  // but we also re-check here so the UX stays honest.
+  if(!isAdminNow()){
+    console.warn('[AFK] saveData() called without admin auth — aborting.');
+    return;
+  }
   const el = document.getElementById('last-update');
   if(!_firestoreAvailable){ el.textContent = '⚠ Offline — changes not saved'; return; }
   try {
@@ -805,7 +827,7 @@ async function doAdminLogin(){
   btn.textContent = 'Signing in…'; btn.disabled = true; errEl.textContent = '';
   try {
     await signInWithEmailAndPassword(auth, email, pw);
-    // onAuthStateChanged will handle the rest
+    // onAuthStateChanged handles the rest
   } catch(e) {
     const inp = document.getElementById('pw-input');
     inp.classList.add('error');
@@ -823,13 +845,18 @@ async function doAdminLogin(){
 }
 async function lockApp(){
   await signOut(auth);
-  applyMode();
-  render();
+  // applyMode() will be called by onAuthStateChanged
 }
+
+// applyMode() is the ONLY place that touches admin-mode class.
+// It is called exclusively from the onAuthStateChanged callback.
 function applyMode(){
   const admin = isAdminNow();
-  const app   = document.getElementById('app');
-  app.classList.toggle('admin-mode', admin);
+  // Temporarily disconnect observer so our legitimate write doesn't fight itself
+  _classObserver.disconnect();
+  appEl.classList.toggle('admin-mode', admin);
+  _classObserver.observe(appEl, { attributes: true, attributeFilter: ['class'] });
+
   const badge = document.getElementById('mode-badge');
   badge.textContent = admin ? 'ADMIN' : 'VIEWER';
   badge.className   = 'mode-badge ' + (admin ? 'admin' : 'viewer');
@@ -839,7 +866,6 @@ function applyMode(){
 
 // ─── AGENT BREAK MODAL ───
 function openAgentBreakModal(){
-  // Only show agents that are visible in breaks
   const breakAgents = DATA.agents.filter(a => agentInBreaks(a));
   const sel = document.getElementById('abm-agent');
   sel.innerHTML = breakAgents.map(a=>`<option value="${a}">${a}</option>`).join('');
@@ -895,7 +921,6 @@ function confirmAgentBreak(){
 
 // ─── ON LEAVE MODAL ───
 function openLeaveModal(){
-  // Leave modal shows ALL agents regardless of break visibility
   const sel = document.getElementById('lv-agent');
   sel.innerHTML = DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
   document.getElementById('lv-note').value = '';
@@ -1121,7 +1146,6 @@ function renderMetrics(){
 }
 
 function populateAgentSelect(){
-  // Admin "add break" modal: only agents visible in breaks
   const breakAgents = DATA.agents.filter(a => agentInBreaks(a));
   document.getElementById('m-agent').innerHTML =
     breakAgents.map(a=>`<option value="${a}">${a}</option>`).join('');
@@ -1396,10 +1420,11 @@ document.getElementById('app').addEventListener('click', e => {
 });
 
 // ─── BOOT ───
-applyMode();
 render();
 loadData().then(()=>attachRealtimeListener());
 
+// Auth state is the single source of truth for admin mode.
+// applyMode() is ONLY called here.
 onAuthStateChanged(auth, (user) => {
   document.getElementById('lock-screen').style.display='none';
   applyMode();
