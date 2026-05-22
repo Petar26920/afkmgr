@@ -422,6 +422,14 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
+<div id="tl-tooltip" style="
+  position:fixed;pointer-events:none;z-index:9999;display:none;
+  background:#0d1219;border:1px solid rgba(255,255,255,0.12);
+  border-radius:7px;padding:6px 11px;font-family:'Space Grotesk',sans-serif;
+  font-size:12px;white-space:nowrap;line-height:1.5;
+  box-shadow:0 4px 16px rgba(0,0,0,0.5);
+"></div>
+
 <!-- ON LEAVE MODAL -->
 <div class="modal-overlay" id="leave-modal">
   <div class="modal" style="width:340px;">
@@ -821,12 +829,35 @@ function renderLastUpdated(){
 // ─── PANEL CONTENT BUILDERS ───
 function buildTimelinePanel(heightPx){
   const now=nowMins(), np=pct(now);
-  const agents=[...new Set([...DATA.coffeeBreaks.map(b=>b.agent),...DATA.lunchBreaks.map(b=>b.agent),...DATA.triageSlots.map(t=>t.agent)])];
+  const agents=[...new Set([
+    ...DATA.coffeeBreaks.map(b=>b.agent),
+    ...DATA.lunchBreaks.map(b=>b.agent),
+    ...DATA.triageSlots.map(t=>t.agent)
+  ])];
+
   const rows=agents.map(ag=>{
-    const bbs=[...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),...DATA.lunchBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'lunch'}))].map(b=>`<div class="tl-bar tl-${b.type}" style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%"></div>`).join('');
-    const tbs=DATA.triageSlots.filter(t=>t.agent===ag).map(t=>{const isNow=now>=t.start&&now<t.end;return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}" style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%"></div>`;}).join('');
-    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
+    const bbs=[
+      ...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),
+      ...DATA.lunchBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'lunch'}))
+    ].map(b=>`<div class="tl-bar tl-${b.type}"
+        style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%"
+        data-tip="${fmtM(b.start)}–${fmtM(b.end)} · ${b.type==='coffee'?'☕ Coffee break':'🍕 Lunch break'} · ${b.agent}"
+      ></div>`).join('');
+
+    const tbs=DATA.triageSlots.filter(t=>t.agent===ag).map(t=>{
+      const isNow=now>=t.start&&now<t.end;
+      return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}"
+          style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%"
+          data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
+        ></div>`;
+    }).join('');
+
+    return `<div class="tl-row">
+      <div class="tl-name">${ag}</div>
+      <div class="tl-track">${bbs}${tbs}<div class="tl-now" style="left:${np}%"></div></div>
+    </div>`;
   }).join('');
+
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
   return `<div class="card" style="height:100%;${hStyle}">
     <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Break timeline · 08:00 – 18:00</div></div>
@@ -1461,6 +1492,24 @@ document.getElementById('le-rows-container').addEventListener('click',e=>{
     openCustomPanelModal(panelId);
   }
 });
+
+// ─── TIMELINE TOOLTIP ───
+const _tlTip = document.getElementById('tl-tooltip');
+document.getElementById('viewer-grid').addEventListener('mousemove', e => {
+  const bar = e.target.closest('[data-tip]');
+  if (!bar) { _tlTip.style.display = 'none'; return; }
+  _tlTip.innerHTML = bar.dataset.tip;
+  // position: 12px above cursor, clamped to viewport edges
+  const x = Math.min(e.clientX + 12, window.innerWidth - _tlTip.offsetWidth - 16);
+  const y = e.clientY - _tlTip.offsetHeight - 10;
+  _tlTip.style.left = x + 'px';
+  _tlTip.style.top  = y + 'px';
+  _tlTip.style.display = 'block';
+});
+document.getElementById('viewer-grid').addEventListener('mouseleave', () => {
+  _tlTip.style.display = 'none';
+});
+
 
 document.getElementById('le-add-row-btn').addEventListener('click',()=>{
   leLayout.push({panels:[]});
