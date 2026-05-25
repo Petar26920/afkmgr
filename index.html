@@ -109,7 +109,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .tl-row{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
 .tl-name{font-size:10px;color:var(--muted);width:120px;flex-shrink:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);}
 .tl-track{flex:1;height:14px;background:var(--surface2);border-radius:4px;position:relative;overflow:hidden;}
-.tl-bar{height:100%;position:absolute;border-radius:4px;opacity:0.85;transition:width 0.3s,left 0.3s;}
+.tl-bar{height:100%;position:absolute;border-radius:4px;opacity:0.85;transition:width 0.3s,left 0.3s;cursor:pointer;}
+.tl-bar:hover{opacity:1;filter:brightness(1.2);}
 .tl-coffee{background:var(--amber);}
 .tl-lunch{background:var(--green);}
 .tl-triage{background:rgba(0,212,212,0.35);border:1px solid rgba(0,212,212,0.6);}
@@ -229,7 +230,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .leave-entry-name{font-size:14px;font-weight:600;line-height:1.2;}
 .leave-entry-note{font-size:9px;color:var(--muted);font-family:var(--mono);line-height:1.2;}
 
-/* custom text panel */
 .custom-panel-body{padding:4px 0;font-size:13px;line-height:1.65;color:var(--text);white-space:pre-wrap;word-break:break-word;}
 .custom-panel-title-text{font-size:13px;font-weight:700;color:var(--text);}
 
@@ -247,12 +247,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 #app:not(.admin-mode) .clock-display{font-size:16px;}
 #app:not(.admin-mode) .card-header{margin-bottom:8px;}
 
-/* ─── VIEWER GRID ─── */
 #viewer-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px;}
 #app:not(.admin-mode) #viewer-grid{gap:12px;}
 .viewer-panel{min-width:0;overflow:hidden;}
 
-/* ─── LAYOUT EDITOR ─── */
 #layout-editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:600;display:none;flex-direction:column;backdrop-filter:blur(6px);}
 #layout-editor-overlay.open{display:flex;}
 .le-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border2);background:var(--surface);flex-shrink:0;}
@@ -271,11 +269,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .le-hint{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .le-hint-icon{font-size:14px;}
 
-/* row in editor */
 .le-row{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;position:relative;min-height:60px;}
 .le-snap-col{background:rgba(255,255,255,0.018);border:1px solid rgba(255,255,255,0.04);border-radius:3px;pointer-events:none;}
 
-/* tile */
 .le-tile{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;display:flex;flex-direction:column;gap:5px;cursor:grab;position:relative;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s;min-width:0;grid-row:1;}
 .le-tile:hover{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue);}
 .le-tile.dragging{opacity:0.4;border-style:dashed;cursor:grabbing;}
@@ -286,7 +282,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .le-tile-hidden-overlay{position:absolute;inset:0;background:rgba(8,11,16,0.55);display:flex;align-items:center;justify-content:center;pointer-events:none;border-radius:var(--r);}
 .le-tile-hidden-overlay span{font-size:20px;}
 
-/* tile controls row */
 .le-tile-controls{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
 .le-span-btn{width:20px;height:20px;border-radius:3px;border:1px solid var(--border2);background:var(--surface3);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--mono);transition:all 0.12s;line-height:1;flex-shrink:0;}
 .le-span-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue2);}
@@ -295,22 +290,18 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .le-vis-btn{background:none;border:none;font-size:12px;cursor:pointer;opacity:0.5;transition:opacity 0.15s;flex-shrink:0;padding:0 2px;line-height:1;}
 .le-vis-btn:hover{opacity:1;}
 
-/* height controls */
 .le-height-controls{display:flex;align-items:center;gap:3px;}
 .le-height-label{font-size:9px;color:var(--muted2);font-family:var(--mono);white-space:nowrap;}
 
-/* resize handle */
 .le-resize-handle{position:absolute;right:0;top:0;bottom:0;width:10px;cursor:ew-resize;display:flex;align-items:center;justify-content:center;z-index:2;}
 .le-resize-handle::after{content:'';width:3px;height:18px;background:var(--border2);border-radius:2px;transition:background 0.15s;}
 .le-resize-handle:hover::after{background:var(--blue);}
 
-/* row controls */
 .le-row-controls{display:flex;gap:6px;align-items:center;margin-top:2px;}
-.le-row-btn{font-size:10px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:var(--mono);font-weight:600;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);transition:all 0.12s;}
+.le-row-btn{font-size:10px;padding:3px 10px;border-radius:4px;cursor:pointer;font-family:var(--mono);font-weight:600;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);transition:all 0.12px;}
 .le-row-btn:hover{color:var(--text);border-color:var(--blue);background:var(--blue2);}
 .le-row-btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red2);}
 
-/* panel picker */
 .le-panel-picker{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:12px;display:flex;flex-wrap:wrap;gap:6px;}
 .le-picker-title{font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;width:100%;}
 .le-picker-chip{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600;border:1px solid var(--border2);background:var(--surface3);color:var(--muted);cursor:pointer;transition:all 0.12s;font-family:var(--mono);}
@@ -318,12 +309,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .le-picker-chip.custom-chip{border-color:rgba(181,122,255,0.4);color:var(--purple);background:var(--purple2);}
 .le-picker-chip.custom-chip:hover{border-color:var(--purple);background:rgba(181,122,255,0.25);}
 
-/* layout edit button */
 .layout-edit-btn{display:none;font-size:11px;font-weight:600;padding:5px 12px;border-radius:5px;background:var(--purple2);border:1px solid rgba(181,122,255,0.3);color:var(--purple);cursor:pointer;font-family:var(--mono);transition:all 0.15s;letter-spacing:0.04em;white-space:nowrap;}
 .layout-edit-btn:hover{background:rgba(181,122,255,0.25);transform:translateY(-1px);}
 .admin-mode .layout-edit-btn{display:inline-flex;align-items:center;gap:5px;}
 
-/* custom text panel modal */
 #custom-panel-modal .modal{width:480px;max-width:95vw;}
 .color-swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
 .color-swatch{width:24px;height:24px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:border-color 0.15s;flex-shrink:0;}
@@ -331,6 +320,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 </style>
 </head>
 <body>
+
+<!-- TIMELINE TOOLTIP -->
+<div id="tl-tooltip" style="position:fixed;pointer-events:none;z-index:9999;display:none;background:#0d1219;border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:6px 11px;font-family:'Space Grotesk',sans-serif;font-size:12px;white-space:nowrap;line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,0.5);"></div>
 
 <!-- LOCK SCREEN -->
 <div id="lock-screen">
@@ -421,14 +413,6 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     </div>
   </div>
 </div>
-
-<div id="tl-tooltip" style="
-  position:fixed;pointer-events:none;z-index:9999;display:none;
-  background:#0d1219;border:1px solid rgba(255,255,255,0.12);
-  border-radius:7px;padding:6px 11px;font-family:'Space Grotesk',sans-serif;
-  font-size:12px;white-space:nowrap;line-height:1.5;
-  box-shadow:0 4px 16px rgba(0,0,0,0.5);
-"></div>
 
 <!-- ON LEAVE MODAL -->
 <div class="modal-overlay" id="leave-modal">
@@ -575,6 +559,41 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <div class="agents-grid" id="agents-grid"></div>
         <button class="add-agent-btn" id="add-agent-btn">+ Add agent</button>
       </div>
+
+      <!-- TOP PERFORMERS ADMIN CARD -->
+      <div class="card" style="grid-column:1/-1;">
+        <div class="card-header">
+          <div class="card-title"><span class="pip pip-amber"></span>Top performers</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="tp-date-badge" style="font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);"></span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end;">
+          <div>
+            <label style="font-size:10px;color:var(--amber);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🥇 1st place</label>
+            <select id="tp-first" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;color:#aab4c4;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🥈 2nd place</label>
+            <select id="tp-second" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;color:#cd7f32;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🥉 3rd place</label>
+            <select id="tp-third" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">Note (optional)</label>
+            <input type="text" id="tp-note" maxlength="80" placeholder="e.g. Record tickets closed!" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"/>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+          <button id="tp-save-btn" style="padding:7px 20px;background:var(--amber);color:#000;border:none;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">💾 Save today's top performers</button>
+        </div>
+        <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);margin-bottom:10px;">History</div>
+          <div id="tp-history"></div>
+        </div>
+      </div>
     </div>
 
     <!-- VIEWER LAYOUT GRID -->
@@ -609,12 +628,12 @@ function isAdminNow(){ return !!auth.currentUser; }
 function requireAdmin(){ if(!isAdminNow()) throw new Error('Not authenticated as admin'); }
 
 // ─── PANEL DEFS ───
-// Built-in panels. Custom panels have id starting with 'custom:'
 const BUILTIN_PANELS = [
-  { id:'timeline',     label:'Break Timeline',   icon:'📊', defaultSpan:9, defaultHeight:null },
-  { id:'leave-panel',  label:'On Leave',         icon:'🏖',  defaultSpan:3, defaultHeight:null },
-  { id:'triage-strip', label:'Triage Strip',     icon:'🔀', defaultSpan:7, defaultHeight:null },
-  { id:'patching-v',   label:'Patching Agent',   icon:'🔧', defaultSpan:5, defaultHeight:null },
+  { id:'timeline',       label:'Break Timeline',   icon:'📊', defaultSpan:9, defaultHeight:null },
+  { id:'leave-panel',    label:'On Leave',         icon:'🏖',  defaultSpan:3, defaultHeight:null },
+  { id:'triage-strip',   label:'Triage Strip',     icon:'🔀', defaultSpan:7, defaultHeight:null },
+  { id:'patching-v',     label:'Patching Agent',   icon:'🔧', defaultSpan:5, defaultHeight:null },
+  { id:'top-performers', label:'Top Performers',   icon:'🏆', defaultSpan:4, defaultHeight:null },
 ];
 
 const ACCENT_COLORS = [
@@ -659,8 +678,9 @@ const DEFAULT_DATA = {
   agentPasswords:{'Bogdan Repanovic':'bogdan123','Danica Pecanac':'danica123','Ivan Curcic':'ivan123','Sari Abboushi':'sari123','Luka Martinovic':'luka.m123','Aleksa Kostic':'aleksa123','Bojan Pavlovic':'bojan123','Stefan Krstic':'stefan123','Luka Jovanovic':'luka.j123','Milos Savic':'milos123','Tamara Trakic':'tamara123','Milica Stepanovic':'milica123','Dimitrije Milosavljevic':'dimitrije123','David Kostic':'david123','Isidora Stevanovic':'isidora123','Petar Spasic':'petar123','Radislav Lazarevic':'radislav123'},
   onLeave:[],
   viewerLayout: DEFAULT_VIEWER_LAYOUT,
-  customPanels: {},   // id -> {title, body, color}
-  lastUpdated: null,  // ISO string, set on every saveData
+  customPanels: {},
+  topPerformers: {},
+  lastUpdated: null,
 };
 
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -689,6 +709,7 @@ async function loadData(){
         onLeave:           d.onLeave           ?? DEFAULT_DATA.onLeave,
         viewerLayout:      d.viewerLayout      ?? DEFAULT_VIEWER_LAYOUT,
         customPanels:      d.customPanels      ?? {},
+        topPerformers:     d.topPerformers     ?? {},
         lastUpdated:       d.lastUpdated       ?? null,
       };
       if(!d.agentPasswords) await setDoc(DOC_REF, DATA);
@@ -720,6 +741,7 @@ function attachRealtimeListener(){
       onLeave:           d.onLeave           ?? DEFAULT_DATA.onLeave,
       viewerLayout:      d.viewerLayout      ?? DEFAULT_VIEWER_LAYOUT,
       customPanels:      d.customPanels      ?? {},
+      topPerformers:     d.topPerformers     ?? {},
       lastUpdated:       d.lastUpdated       ?? null,
     };
     render();
@@ -740,6 +762,24 @@ async function saveData(){
     console.error('Firestore save error:', e);
   }
 }
+
+// ─── AGENT BREAK SAVE (no auth required — only writes coffeeBreaks) ───
+async function saveAgentBreak(){
+  const errEl = document.getElementById('abm-err');
+  if(!_firestoreAvailable){
+    if(errEl) errEl.textContent='⚠ Offline — break was not saved.';
+    return;
+  }
+  try {
+    await updateDoc(DOC_REF, { coffeeBreaks: DATA.coffeeBreaks });
+  } catch(e){
+    console.error('Agent break save failed:', e);
+    if(errEl) errEl.textContent='⚠ Could not save break: '+e.message;
+    DATA.coffeeBreaks.pop();
+    render();
+  }
+}
+
 function setStatusBar(){
   const el=document.getElementById('last-update');
   if(el) el.textContent=_firestoreAvailable?'Live · synced via Firebase':'⚠ Offline · using default data';
@@ -781,23 +821,6 @@ function applyMode(){
   if(btn) btn.textContent=admin?'🔒 Exit Admin':'🔐 Admin';
 }
 
-async function saveAgentBreak() {
-  const errEl = document.getElementById('abm-err');
-  if (!_firestoreAvailable) {
-    if (errEl) errEl.textContent = '⚠ Offline — break was not saved.';
-    return;
-  }
-  try {
-    await updateDoc(DOC_REF, { coffeeBreaks: DATA.coffeeBreaks });
-  } catch (e) {
-    console.error('Agent break save failed:', e);
-    if (errEl) errEl.textContent = '⚠ Could not save break: ' + e.message;
-    // Roll back the local change so the UI stays honest
-    DATA.coffeeBreaks.pop();
-    render();
-  }
-}
-
 // ─── HELPERS ───
 const AV=[
   {bg:'rgba(61,158,255,0.15)',fg:'#3d9eff'},{bg:'rgba(0,229,160,0.15)',fg:'#00e5a0'},
@@ -829,12 +852,7 @@ function renderLastUpdated(){
 // ─── PANEL CONTENT BUILDERS ───
 function buildTimelinePanel(heightPx){
   const now=nowMins(), np=pct(now);
-  const agents=[...new Set([
-    ...DATA.coffeeBreaks.map(b=>b.agent),
-    ...DATA.lunchBreaks.map(b=>b.agent),
-    ...DATA.triageSlots.map(t=>t.agent)
-  ])];
-
+  const agents=[...new Set([...DATA.coffeeBreaks.map(b=>b.agent),...DATA.lunchBreaks.map(b=>b.agent),...DATA.triageSlots.map(t=>t.agent)])];
   const rows=agents.map(ag=>{
     const bbs=[
       ...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),
@@ -843,7 +861,6 @@ function buildTimelinePanel(heightPx){
         style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%"
         data-tip="${fmtM(b.start)}–${fmtM(b.end)} · ${b.type==='coffee'?'☕ Coffee break':'🍕 Lunch break'} · ${b.agent}"
       ></div>`).join('');
-
     const tbs=DATA.triageSlots.filter(t=>t.agent===ag).map(t=>{
       const isNow=now>=t.start&&now<t.end;
       return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}"
@@ -851,13 +868,8 @@ function buildTimelinePanel(heightPx){
           data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
         ></div>`;
     }).join('');
-
-    return `<div class="tl-row">
-      <div class="tl-name">${ag}</div>
-      <div class="tl-track">${bbs}${tbs}<div class="tl-now" style="left:${np}%"></div></div>
-    </div>`;
+    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
-
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
   return `<div class="card" style="height:100%;${hStyle}">
     <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Break timeline · 08:00 – 18:00</div></div>
@@ -868,14 +880,65 @@ function buildTimelinePanel(heightPx){
 }
 
 function buildLeavePanelContent(heightPx){
-  let inner;
-  if(!DATA.onLeave||!DATA.onLeave.length) inner='<div style="font-size:11px;color:var(--muted);font-family:var(--mono);">—</div>';
-  else inner=DATA.onLeave.map(l=>`<div class="leave-entry"><div class="avatar" style="${avStyle(l.agent)};width:22px;height:22px;font-size:8px;flex-shrink:0;">${initials(l.agent)}</div><div><div class="leave-entry-name">${shortName(l.agent)}</div>${l.note?`<div class="leave-entry-note">${l.note}</div>`:''}</div></div>`).join('');
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
+  const id='leave-inner-'+Date.now();
+
+  if(!DATA.onLeave||!DATA.onLeave.length){
+    return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
+      <div class="card-header" style="margin-bottom:8px;"><div class="card-title"><span class="pip pip-purple"></span>On leave</div></div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">—</div>
+    </div>`;
+  }
+
+  const inner = DATA.onLeave.map(l=>`
+    <div class="leave-entry">
+      <div class="avatar" style="${avStyle(l.agent)};width:28px;height:28px;font-size:10px;flex-shrink:0;">${initials(l.agent)}</div>
+      <div>
+        <div class="leave-entry-name">${shortName(l.agent)}</div>
+        ${l.note?`<div class="leave-entry-note">${l.note}</div>`:''}
+      </div>
+    </div>`).join('');
+
   return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
     <div class="card-header" style="margin-bottom:8px;"><div class="card-title"><span class="pip pip-purple"></span>On leave</div></div>
-    <div style="display:flex;flex-direction:column;gap:6px;flex:1;">${inner}</div>
-  </div>`;
+    <div id="${id}" style="display:flex;flex-direction:column;gap:6px;flex:1;overflow:hidden;">${inner}</div>
+  </div>
+  <script>
+  (function(){
+    function fit(){
+      const wrap = document.getElementById('${id}');
+      if(!wrap) return;
+      wrap.style.fontSize='';
+      wrap.querySelectorAll('.leave-entry-name').forEach(el=>el.style.fontSize='');
+      wrap.querySelectorAll('.leave-entry-note').forEach(el=>el.style.fontSize='');
+      wrap.querySelectorAll('.avatar').forEach(el=>{el.style.width='28px';el.style.height='28px';el.style.fontSize='';});
+      wrap.style.gap='6px';
+      if(wrap.scrollHeight <= wrap.clientHeight) return;
+      let lo=0.5, hi=1.0, best=0.5;
+      for(let i=0;i<12;i++){
+        const mid=(lo+hi)/2;
+        applyScale(wrap,mid);
+        if(wrap.scrollHeight <= wrap.clientHeight){ best=mid; lo=mid; }
+        else hi=mid;
+      }
+      applyScale(wrap,best);
+    }
+    function applyScale(wrap,s){
+      const nameSize = Math.max(10, Math.round(15*s));
+      const noteSize = Math.max(8,  Math.round(11*s));
+      const avSize   = Math.max(14, Math.round(28*s));
+      const avFont   = Math.max(7,  Math.round(avSize*0.38));
+      const gap      = Math.max(2,  Math.round(8*s));
+      wrap.style.gap = gap+'px';
+      wrap.querySelectorAll('.leave-entry-name').forEach(el=>el.style.fontSize=nameSize+'px');
+      wrap.querySelectorAll('.leave-entry-note').forEach(el=>el.style.fontSize=noteSize+'px');
+      wrap.querySelectorAll('.avatar').forEach(el=>{
+        el.style.width=avSize+'px';el.style.height=avSize+'px';el.style.fontSize=avFont+'px';
+      });
+    }
+    requestAnimationFrame(()=>requestAnimationFrame(fit));
+  })();
+  <\/script>`;
 }
 
 function buildTriageStripContent(heightPx){
@@ -907,6 +970,50 @@ function buildPatchingViewerContent(heightPx){
   </div>`;
 }
 
+function buildTopPerformersContent(heightPx){
+  const today = new Date().toISOString().slice(0,10);
+  const tp = DATA.topPerformers || {};
+  const entry = tp[today];
+  const hStyle = heightPx ? `height:${heightPx}px;overflow:hidden;` : '';
+
+  const medals = ['🥇','🥈','🥉'];
+  const colors = ['var(--amber)','#aab4c4','#cd7f32'];
+  const labelColors = ['rgba(255,179,64,0.15)','rgba(170,180,196,0.15)','rgba(205,127,50,0.15)'];
+
+  let inner;
+  if(!entry || (!entry.first && !entry.second && !entry.third)){
+    inner = `<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;opacity:0.4;">
+      <div style="font-size:28px;">🏆</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">Not set for today</div>
+    </div>`;
+  } else {
+    const places = [
+      {key:'first', label:'1st'},
+      {key:'second',label:'2nd'},
+      {key:'third', label:'3rd'},
+    ];
+    inner = `<div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+      ${places.map((p,i)=> entry[p.key] ? `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;background:${labelColors[i]};border:1px solid ${colors[i]}33;">
+          <span style="font-size:20px;flex-shrink:0;">${medals[i]}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:14px;font-weight:700;color:${colors[i]};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${entry[p.key]}</div>
+            <div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${p.label} place · ${new Date().toLocaleDateString([],{month:'short',day:'numeric'})}</div>
+          </div>
+          <div class="avatar" style="${avStyle(entry[p.key])};width:28px;height:28px;font-size:10px;flex-shrink:0;">${initials(entry[p.key])}</div>
+        </div>` : '').join('')}
+      ${entry.note ? `<div style="font-size:11px;color:var(--muted);font-family:var(--mono);padding:4px 2px;border-top:1px solid var(--border);margin-top:2px;">${entry.note}</div>` : ''}
+    </div>`;
+  }
+
+  return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
+    <div class="card-header" style="margin-bottom:8px;">
+      <div class="card-title"><span class="pip" style="background:var(--amber);"></span>Top performers · today</div>
+    </div>
+    ${inner}
+  </div>`;
+}
+
 function buildCustomPanelContent(panelId, heightPx){
   const cp=(DATA.customPanels||{})[panelId]||{title:'Custom Panel',body:'',color:'blue'};
   const accent=ACCENT_COLORS.find(c=>c.key===cp.color)||ACCENT_COLORS[0];
@@ -922,10 +1029,11 @@ function buildCustomPanelContent(panelId, heightPx){
 function buildPanelContent(panelId, heightPx){
   if(panelId.startsWith('custom:')) return buildCustomPanelContent(panelId, heightPx);
   switch(panelId){
-    case 'timeline':     return buildTimelinePanel(heightPx);
-    case 'leave-panel':  return buildLeavePanelContent(heightPx);
-    case 'triage-strip': return buildTriageStripContent(heightPx);
-    case 'patching-v':   return buildPatchingViewerContent(heightPx);
+    case 'timeline':       return buildTimelinePanel(heightPx);
+    case 'leave-panel':    return buildLeavePanelContent(heightPx);
+    case 'triage-strip':   return buildTriageStripContent(heightPx);
+    case 'patching-v':     return buildPatchingViewerContent(heightPx);
+    case 'top-performers': return buildTopPerformersContent(heightPx);
     default: return `<div class="card"><div class="card-title">${panelId}</div></div>`;
   }
 }
@@ -958,6 +1066,7 @@ function render(){
   renderMetrics();
   renderViewerGrid();
   renderLastUpdated();
+  renderTopPerformers();
   populateAgentSelect();
 }
 
@@ -1054,6 +1163,63 @@ function populateAgentSelect(){
   const sel=document.getElementById('m-agent'); if(sel) sel.innerHTML=breakAgents.map(a=>`<option value="${a}">${a}</option>`).join('');
 }
 
+// ─── TOP PERFORMERS ───
+function renderTopPerformers(){
+  const today = new Date().toISOString().slice(0,10);
+  const tp = DATA.topPerformers || {};
+  const entry = tp[today] || {};
+
+  const badge = document.getElementById('tp-date-badge');
+  if(badge) badge.textContent = new Date().toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+
+  const none = `<option value="">— none —</option>`;
+  ['tp-first','tp-second','tp-third'].forEach(id=>{
+    const sel = document.getElementById(id); if(!sel) return;
+    sel.innerHTML = none + DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
+  });
+  const f=document.getElementById('tp-first'), s=document.getElementById('tp-second'), t=document.getElementById('tp-third'), n=document.getElementById('tp-note');
+  if(f) f.value = entry.first  || '';
+  if(s) s.value = entry.second || '';
+  if(t) t.value = entry.third  || '';
+  if(n) n.value = entry.note   || '';
+
+  const hist = document.getElementById('tp-history'); if(!hist) return;
+  const sorted = Object.entries(tp).sort((a,b)=>b[0].localeCompare(a[0]));
+  if(!sorted.length){ hist.innerHTML='<div style="font-size:12px;color:var(--muted);font-family:var(--mono);">No history yet.</div>'; return; }
+  hist.innerHTML = sorted.map(([date, e])=>{
+    const d = new Date(date+'T12:00:00');
+    const isToday = date===today;
+    const places = [
+      e.first  ? `<span style="color:var(--amber);">🥇 ${e.first}</span>`  : '',
+      e.second ? `<span style="color:#aab4c4;">🥈 ${e.second}</span>` : '',
+      e.third  ? `<span style="color:#cd7f32;">🥉 ${e.third}</span>`  : '',
+    ].filter(Boolean).join('<span style="color:var(--muted2);padding:0 6px;">·</span>');
+    return `<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <div style="min-width:130px;flex-shrink:0;">
+        <div style="font-size:12px;font-weight:700;color:${isToday?'var(--amber)':'var(--text)'};">${isToday?'Today · ':''}${d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})}</div>
+      </div>
+      <div style="flex:1;font-size:12px;display:flex;flex-wrap:wrap;gap:4px;">${places||'<span style="color:var(--muted);">—</span>'}</div>
+      ${e.note?`<div style="font-size:11px;color:var(--muted);font-family:var(--mono);max-width:200px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.note}</div>`:''}
+      <button style="background:none;border:none;color:var(--muted2);font-size:13px;cursor:pointer;padding:2px 5px;border-radius:4px;line-height:1;flex-shrink:0;" data-action="tp-delete" data-date="${date}" title="Delete">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function saveTodayTopPerformers(){
+  try{requireAdmin();}catch(e){return;}
+  const today = new Date().toISOString().slice(0,10);
+  if(!DATA.topPerformers) DATA.topPerformers={};
+  DATA.topPerformers[today] = {
+    first:  document.getElementById('tp-first').value,
+    second: document.getElementById('tp-second').value,
+    third:  document.getElementById('tp-third').value,
+    note:   document.getElementById('tp-note').value.trim(),
+  };
+  renderTopPerformers();
+  renderViewerGrid();
+  saveData();
+}
+
 // ─── EDIT ACTIONS ───
 function updateBreak(type,idx,field,val){ try{requireAdmin();}catch(e){render();return;} const arr=type==='coffee'?DATA.coffeeBreaks:DATA.lunchBreaks; arr[idx][field]=val; render(); saveData(); }
 function updateBreakTime(type,idx,field,val){ try{requireAdmin();}catch(e){render();return;} const [h,m]=val.split(':').map(Number); const arr=type==='coffee'?DATA.coffeeBreaks:DATA.lunchBreaks; arr[idx][field]=h*60+m; render(); saveData(); }
@@ -1089,7 +1255,7 @@ function confirmAgentBreak(){
   if(DATA.coffeeBreaks.filter(b=>b.start<end&&b.end>start).length>=2){ errEl.textContent='✕ 2 agents are already on break during that slot.'; return; }
   if(DATA.coffeeBreaks.find(b=>b.agent===agent&&b.start<end&&b.end>start)){ errEl.textContent='✕ You already have a break overlapping this time slot.'; return; }
   DATA.coffeeBreaks.push({agent,start,end,agentAdded:true}); DATA.coffeeBreaks.sort((a,b)=>a.start-b.start);
-  closeAgentBreakModal(); render(); saveAgentBreak();  // ← only writes coffeeBreaks, no auth needed
+  closeAgentBreakModal(); render(); saveAgentBreak();
 }
 
 // ─── LEAVE MODAL ───
@@ -1158,7 +1324,7 @@ function confirmAddBreak(){
 document.getElementById('m-type').addEventListener('change',function(){activeModalType=this.value;});
 
 // ─── CUSTOM PANEL MODAL ───
-let _cpEditingId=null; // null=new, otherwise existing id
+let _cpEditingId=null;
 let _cpSelectedColor='blue';
 
 function populateColorSwatches(){
@@ -1205,7 +1371,6 @@ function confirmCustomPanel(){
   let panelId=_cpEditingId;
   if(!panelId){
     panelId='custom:'+Date.now();
-    // Add to last row of layout, or create new row
     const layout=getViewerLayout();
     if(!layout.length) layout.push({panels:[]});
     layout[layout.length-1].panels.push({id:panelId,span:4,visible:true,height:null});
@@ -1225,6 +1390,22 @@ function updateClock(){
 }
 setInterval(updateClock,1000); updateClock();
 setInterval(render,30000);
+
+// ─── TIMELINE TOOLTIP ───
+const _tlTip = document.getElementById('tl-tooltip');
+document.getElementById('viewer-grid').addEventListener('mousemove', e => {
+  const bar = e.target.closest('[data-tip]');
+  if(!bar){ _tlTip.style.display='none'; return; }
+  _tlTip.innerHTML = bar.dataset.tip;
+  const x = Math.min(e.clientX+12, window.innerWidth-_tlTip.offsetWidth-16);
+  const y = e.clientY-_tlTip.offsetHeight-10;
+  _tlTip.style.left = x+'px';
+  _tlTip.style.top  = y+'px';
+  _tlTip.style.display = 'block';
+});
+document.getElementById('viewer-grid').addEventListener('mouseleave', ()=>{
+  _tlTip.style.display='none';
+});
 
 // ════════════════════════════════════════════════
 // ─── LAYOUT EDITOR ───
@@ -1275,7 +1456,6 @@ function renderLayoutEditor(){
     rowEl.className='le-row';
     rowEl.dataset.rowIdx=rowIdx;
 
-    // snap column guides
     for(let c=0;c<12;c++){
       const col=document.createElement('div');
       col.className='le-snap-col';
@@ -1342,7 +1522,6 @@ function buildTileEl(panel,panelIdx,rowIdx){
     <div class="le-resize-handle" data-le-action="resize-start" data-row="${rowIdx}" data-panel="${panelIdx}"></div>
   `;
 
-  // Drag
   tile.addEventListener('dragstart',e=>{
     leDragSrc={rowIdx,panelIdx};
     tile.classList.add('dragging');
@@ -1368,7 +1547,6 @@ function buildTileEl(panel,panelIdx,rowIdx){
     renderLayoutEditor();
   });
 
-  // Resize handle
   const handle=tile.querySelector('.le-resize-handle');
   handle.addEventListener('mousedown',e=>{
     e.preventDefault(); e.stopPropagation();
@@ -1410,7 +1588,6 @@ function renderPanelPicker(){
     }
     picker.appendChild(chip);
   }
-  // Custom panel chip
   const customChip=document.createElement('button');
   customChip.className='le-picker-chip custom-chip';
   customChip.innerHTML='📝 + New Custom Panel';
@@ -1421,7 +1598,6 @@ function renderPanelPicker(){
   });
   picker.appendChild(customChip);
 
-  // Existing custom panels not in layout
   const customPanels=DATA.customPanels||{};
   Object.keys(customPanels).forEach(id=>{
     if(usedIds.has(id)) return;
@@ -1439,7 +1615,6 @@ function renderPanelPicker(){
   });
 }
 
-// Temp close editor while custom panel modal is open, reopen after
 function closeLayoutEditorTemporarily(){
   document.getElementById('layout-editor-overlay').classList.remove('open');
 }
@@ -1449,7 +1624,6 @@ function reopenLayoutEditor(){
   document.getElementById('layout-editor-overlay').classList.add('open');
 }
 
-// delegated clicks in editor
 document.getElementById('le-rows-container').addEventListener('click',e=>{
   const btn=e.target.closest('[data-le-action]'); if(!btn) return;
   const act=btn.dataset.leAction;
@@ -1486,30 +1660,11 @@ document.getElementById('le-rows-container').addEventListener('click',e=>{
     renderLayoutEditor();
   } else if(act==='edit-custom'){
     const panelId=leLayout[rowIdx].panels[panelIdx].id;
-    // save current leLayout to DATA temporarily so modal sees it
     DATA.viewerLayout=JSON.parse(JSON.stringify(leLayout));
     closeLayoutEditorTemporarily();
     openCustomPanelModal(panelId);
   }
 });
-
-// ─── TIMELINE TOOLTIP ───
-const _tlTip = document.getElementById('tl-tooltip');
-document.getElementById('viewer-grid').addEventListener('mousemove', e => {
-  const bar = e.target.closest('[data-tip]');
-  if (!bar) { _tlTip.style.display = 'none'; return; }
-  _tlTip.innerHTML = bar.dataset.tip;
-  // position: 12px above cursor, clamped to viewport edges
-  const x = Math.min(e.clientX + 12, window.innerWidth - _tlTip.offsetWidth - 16);
-  const y = e.clientY - _tlTip.offsetHeight - 10;
-  _tlTip.style.left = x + 'px';
-  _tlTip.style.top  = y + 'px';
-  _tlTip.style.display = 'block';
-});
-document.getElementById('viewer-grid').addEventListener('mouseleave', () => {
-  _tlTip.style.display = 'none';
-});
-
 
 document.getElementById('le-add-row-btn').addEventListener('click',()=>{
   leLayout.push({panels:[]});
@@ -1523,7 +1678,7 @@ document.getElementById('layout-edit-btn').addEventListener('click',openLayoutEd
 // ─── CUSTOM PANEL MODAL WIRING ───
 document.getElementById('cp-cancel-btn').addEventListener('click',()=>{
   closeCustomPanelModal();
-  if(_cpEditingId!==null||true) reopenLayoutEditor(); // always reopen
+  reopenLayoutEditor();
 });
 document.getElementById('cp-ok-btn').addEventListener('click',()=>{
   confirmCustomPanel();
@@ -1558,6 +1713,7 @@ document.getElementById('add-leave-btn').addEventListener('click',openLeaveModal
 document.getElementById('lv-cancel-btn').addEventListener('click',closeLeaveModal);
 document.getElementById('lv-ok-btn').addEventListener('click',confirmAddLeave);
 document.getElementById('lv-note').addEventListener('keydown',e=>{if(e.key==='Enter')confirmAddLeave();});
+document.getElementById('tp-save-btn').addEventListener('click',saveTodayTopPerformers);
 
 document.getElementById('app').addEventListener('change',e=>{
   const el=e.target,act=el.dataset.action,idx=parseInt(el.dataset.idx);
@@ -1579,7 +1735,8 @@ document.getElementById('app').addEventListener('click',e=>{
   }else if(act==='rule-delete'){try{requireAdmin();}catch(e){return;}DATA.rules.splice(idx,1);render();saveData();
   }else if(act==='agent-delete'){removeAgent(idx);
   }else if(act==='leave-delete'){try{requireAdmin();}catch(e){return;}DATA.onLeave.splice(idx,1);render();saveData();
-  }else if(act==='agent-pw-toggle'){const wrap=el.closest('.agent-pw-wrap');const inp=wrap.querySelector('.agent-pw-input');inp.type=inp.type==='password'?'text':'password';el.textContent=inp.type==='password'?'👁':'🙈';}
+  }else if(act==='agent-pw-toggle'){const wrap=el.closest('.agent-pw-wrap');const inp=wrap.querySelector('.agent-pw-input');inp.type=inp.type==='password'?'text':'password';el.textContent=inp.type==='password'?'👁':'🙈';
+  }else if(act==='tp-delete'){try{requireAdmin();}catch(e){return;}const date=el.dataset.date;if(DATA.topPerformers&&DATA.topPerformers[date]){delete DATA.topPerformers[date];renderTopPerformers();renderViewerGrid();saveData();}}
 });
 
 // ─── BOOT ───
