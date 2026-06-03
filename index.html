@@ -115,6 +115,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .tl-lunch{background:var(--green);}
 .tl-triage{background:rgba(0,212,212,0.35);border:1px solid rgba(0,212,212,0.6);}
 .tl-triage-now{background:rgba(0,212,212,0.6);border:1px solid var(--teal);box-shadow:0 0 6px rgba(0,212,212,0.35);}
+.tl-custom{opacity:0.95;border:1px solid rgba(255,255,255,0.06);box-shadow:0 6px 12px rgba(0,0,0,0.25);}
 .tl-now{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:5;}
 .tl-times{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);padding-left:126px;margin-top:4px;font-family:var(--mono);}
 .tl-legend{display:flex;gap:16px;margin-top:8px;font-size:10px;color:var(--muted);padding-left:126px;font-family:var(--mono);}
@@ -446,6 +447,25 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <h2>➕ Add custom task</h2>
+    <p>Add a custom task for an agent and schedule its time.</p>
+    <div class="modal-field"><label>Agent</label><select id="task-agent"></select></div>
+    <div class="modal-field"><label>Title</label><input type="text" id="task-title" maxlength="80" placeholder="Short task title"/></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Start time</label><input type="time" id="task-start" value="10:00" min="08:00" max="17:30"/></div>
+      <div class="modal-field"><label>End time</label><input type="time" id="task-end" value="10:30" min="08:10" max="18:00"/></div>
+    </div>
+    <div class="modal-field"><label>Accent colour</label><div class="color-swatches" id="task-color-swatches"></div></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="task-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="task-ok-btn" style="background:var(--teal);color:#000;">Add task</button>
+    </div>
+  </div>
+</div>
+
 <!-- LAYOUT EDITOR -->
 <div id="layout-editor-overlay">
   <div class="le-header">
@@ -510,6 +530,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           <div style="display:flex;gap:6px;">
             <button class="add-btn" id="import-excel-btn" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);">📋 Import Excel</button>
             <button class="add-btn" id="add-coffee-btn">+ Add</button>
+            <button class="add-btn" id="add-task-btn">+ Task</button>
           </div>
         </div>
         <div id="coffee-list"></div>
@@ -521,6 +542,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card" style="grid-column:1/-1;">
         <div class="card-header"><div class="card-title"><span class="pip pip-purple"></span>On leave</div><button class="add-btn" id="add-leave-btn">+ Add</button></div>
         <div id="leave-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-teal"></span>Custom tasks</div><button class="add-btn" id="add-task-card-btn">+ Add</button></div>
+        <div id="custom-tasks-list"></div>
       </div>
       <div class="card" style="grid-column:1/-1;">
         <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div></div>
@@ -679,6 +704,7 @@ const DEFAULT_DATA = {
   onLeave:[],
   viewerLayout: DEFAULT_VIEWER_LAYOUT,
   customPanels: {},
+  customTasks: [],
   topPerformers: {},
   lastUpdated: null,
 };
@@ -709,6 +735,7 @@ async function loadData(){
         onLeave:           d.onLeave           ?? DEFAULT_DATA.onLeave,
         viewerLayout:      d.viewerLayout      ?? DEFAULT_VIEWER_LAYOUT,
         customPanels:      d.customPanels      ?? {},
+        customTasks:       d.customTasks       ?? DEFAULT_DATA.customTasks,
         topPerformers:     d.topPerformers     ?? {},
         lastUpdated:       d.lastUpdated       ?? null,
       };
@@ -741,6 +768,7 @@ function attachRealtimeListener(){
       onLeave:           d.onLeave           ?? DEFAULT_DATA.onLeave,
       viewerLayout:      d.viewerLayout      ?? DEFAULT_VIEWER_LAYOUT,
       customPanels:      d.customPanels      ?? {},
+      customTasks:       d.customTasks       ?? DEFAULT_DATA.customTasks,
       topPerformers:     d.topPerformers     ?? {},
       lastUpdated:       d.lastUpdated       ?? null,
     };
@@ -852,7 +880,12 @@ function renderLastUpdated(){
 // ─── PANEL CONTENT BUILDERS ───
 function buildTimelinePanel(heightPx){
   const now=nowMins(), np=pct(now);
-  const agents=[...new Set([...DATA.coffeeBreaks.map(b=>b.agent),...DATA.lunchBreaks.map(b=>b.agent),...DATA.triageSlots.map(t=>t.agent)])];
+  const agents=[...new Set([
+    ...DATA.coffeeBreaks.map(b=>b.agent),
+    ...DATA.lunchBreaks.map(b=>b.agent),
+    ...DATA.triageSlots.map(t=>t.agent),
+    ...((DATA.customTasks||[]).map(t=>t.agent))
+  ])];
   const rows=agents.map(ag=>{
     const bbs=[
       ...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),
@@ -861,6 +894,13 @@ function buildTimelinePanel(heightPx){
         style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%"
         data-tip="${fmtM(b.start)}–${fmtM(b.end)} · ${b.type==='coffee'?'☕ Coffee break':'🍕 Lunch break'} · ${b.agent}"
       ></div>`).join('');
+    const tks = (DATA.customTasks||[]).filter(t=>t.agent===ag).map(t=>{
+      const accent=(ACCENT_COLORS.find(c=>c.key===t.color)||ACCENT_COLORS[0]).val;
+      return `<div class="tl-bar tl-custom"
+        style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%;background:${accent}"
+        data-tip="${fmtM(t.start)}–${fmtM(t.end)} · ${t.title} · ${t.agent}"
+      ></div>`;
+    }).join('');
     const tbs=DATA.triageSlots.filter(t=>t.agent===ag).map(t=>{
       const isNow=now>=t.start&&now<t.end;
       return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}"
@@ -868,14 +908,14 @@ function buildTimelinePanel(heightPx){
           data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
         ></div>`;
     }).join('');
-    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
+    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
   return `<div class="card" style="height:100%;${hStyle}">
     <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Break timeline · 08:00 – 18:00</div></div>
     <div id="tl-wrap">${rows}</div>
     <div class="tl-times"><span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span><span>16:00</span><span>17:00</span><span>18:00</span></div>
-    <div class="tl-legend"><span><span class="leg-box" style="background:var(--amber)"></span>Coffee</span><span><span class="leg-box" style="background:var(--green)"></span>Lunch</span><span><span class="leg-box" style="background:var(--teal);opacity:0.75;"></span>Triage</span><span><span class="leg-box" style="background:var(--red)"></span>Now</span></div>
+    <div class="tl-legend"><span><span class="leg-box" style="background:var(--amber)"></span>Coffee</span><span><span class="leg-box" style="background:var(--green)"></span>Lunch</span><span><span class="leg-box" style="background:var(--teal);opacity:0.75;"></span>Triage</span><span><span class="leg-box" style="background:var(--purple)"></span>Custom</span><span><span class="leg-box" style="background:var(--red)"></span>Now</span></div>
   </div>`;
 }
 
@@ -1063,6 +1103,7 @@ function render(){
   renderPatching();
   renderRules();
   renderAgents();
+  renderCustomTasks();
   renderMetrics();
   renderViewerGrid();
   renderLastUpdated();
@@ -1135,6 +1176,26 @@ function renderAgents(){
         <span class="break-vis-label">breaks</span>
       </div>
       <button class="del-btn" data-action="agent-delete" data-idx="${i}" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function renderCustomTasks(){
+  const el=document.getElementById('custom-tasks-list'); if(!el) return;
+  if(!DATA.customTasks||!DATA.customTasks.length){ el.innerHTML='<div class="empty">No custom tasks</div>'; return; }
+  el.innerHTML = DATA.customTasks.map((t,i)=>{
+    const now=nowMins(); const active=now>=t.start&&now<t.end;
+    const badgeClass=active?'badge-now':'badge-coffee';
+    const times=fmtM(t.start)+'–'+fmtM(t.end);
+    return `<div class="break-row" data-idx="${i}">
+      <div class="avatar" style="${avStyle(t.agent)}">${initials(t.agent)}</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;">${t.title}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">${t.agent} · ${times}</div>
+      </div>
+      <span class="badge ${badgeClass}">${times}</span>
+      <button class="del-btn" data-action="task-edit" data-idx="${i}" title="Edit">✎</button>
+      <button class="del-btn" data-action="task-delete" data-idx="${i}" title="Remove">✕</button>
     </div>`;
   }).join('');
 }
@@ -1378,6 +1439,32 @@ function confirmCustomPanel(){
   }
   DATA.customPanels[panelId]={title,body,color:_cpSelectedColor};
   closeCustomPanelModal(); render(); saveData();
+}
+
+// ─── CUSTOM TASK MODAL ───
+let _taskSelectedColor='blue';
+let _editingTaskIndex = null;
+function populateTaskColorSwatches(){
+  const container=document.getElementById('task-color-swatches'); if(!container) return; container.innerHTML='';
+  ACCENT_COLORS.forEach(c=>{
+    const sw=document.createElement('div'); sw.className='color-swatch'+(c.key===_taskSelectedColor?' selected':''); sw.style.background=c.val; sw.title=c.key;
+    sw.addEventListener('click',()=>{ _taskSelectedColor=c.key; container.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('selected')); sw.classList.add('selected'); });
+    container.appendChild(sw);
+  });
+}
+function openTaskModal(){ try{requireAdmin();}catch(e){return;} const sel=document.getElementById('task-agent'); sel.innerHTML=DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join(''); document.getElementById('task-title').value=''; document.getElementById('task-start').value='10:00'; document.getElementById('task-end').value='10:30'; _taskSelectedColor='purple'; populateTaskColorSwatches(); document.getElementById('task-modal').classList.add('open'); }
+function closeTaskModal(){ document.getElementById('task-modal').classList.remove('open'); }
+function confirmAddTask(){
+  try{requireAdmin();}catch(e){closeTaskModal();return;}
+  const agent=document.getElementById('task-agent').value;
+  const title=document.getElementById('task-title').value.trim();
+  const s=document.getElementById('task-start').value, ed=document.getElementById('task-end').value;
+  if(!agent||!title||!s||!ed){alert('Fill all fields.');return;}
+  const [sh,sm]=s.split(':').map(Number), [eh,em]=ed.split(':').map(Number);
+  const entry={agent,title,start:sh*60+sm,end:eh*60+em,color:_taskSelectedColor};
+  if(_editingTaskIndex!==null){ DATA.customTasks[_editingTaskIndex]=entry; _editingTaskIndex=null; }
+  else { if(!DATA.customTasks) DATA.customTasks=[]; DATA.customTasks.push(entry); }
+  closeTaskModal(); render(); saveData();
 }
 
 // ─── CLOCK ───
@@ -1700,6 +1787,16 @@ document.getElementById('save-btn').addEventListener('click',saveData);
 document.getElementById('add-coffee-btn').addEventListener('click',()=>openModal('coffee'));
 document.getElementById('add-lunch-btn').addEventListener('click',()=>openModal('lunch'));
 document.getElementById('import-excel-btn').addEventListener('click',openExcelModal);
+document.getElementById('add-task-btn').addEventListener('click',openTaskModal);
+document.getElementById('task-cancel-btn').addEventListener('click',closeTaskModal);
+document.getElementById('task-ok-btn').addEventListener('click',confirmAddTask);
+document.getElementById('add-task-card-btn').addEventListener('click',openTaskModal);
+
+document.getElementById('custom-tasks-list').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-action]'); if(!btn) return; const act=btn.dataset.action; const idx=parseInt(btn.dataset.idx);
+  if(act==='task-delete'){ try{requireAdmin();}catch(e){return;} DATA.customTasks.splice(idx,1); render(); saveData(); }
+  else if(act==='task-edit'){ try{requireAdmin();}catch(e){return;} const t=DATA.customTasks[idx]; if(!t) return; _editingTaskIndex=idx; document.getElementById('task-agent').value=t.agent; document.getElementById('task-title').value=t.title; document.getElementById('task-start').value=pad(Math.floor(t.start/60))+':'+pad(t.start%60); document.getElementById('task-end').value=pad(Math.floor(t.end/60))+':'+pad(t.end%60); _taskSelectedColor=t.color||'purple'; populateTaskColorSwatches(); document.getElementById('task-modal').classList.add('open'); }
+});
 document.getElementById('modal-cancel-btn').addEventListener('click',closeModal);
 document.getElementById('modal-ok-btn').addEventListener('click',confirmAddBreak);
 document.getElementById('excel-cancel-btn').addEventListener('click',closeExcelModal);
