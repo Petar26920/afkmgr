@@ -364,6 +364,27 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
+<!-- BREAK REQUEST MODAL -->
+<div class="modal-overlay" id="break-request-modal">
+  <div class="modal">
+    <h2>🔄 Request break edit</h2>
+    <p>Update the break time and enter a reason for admin approval.</p>
+    <div class="modal-field"><label>Agent</label><input type="text" id="br-agent" readonly/></div>
+    <div class="modal-field"><label>Break type</label><input type="text" id="br-type" readonly/></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>New start</label><input type="time" id="br-start" value="10:00" min="08:00" max="17:30"/></div>
+      <div class="modal-field"><label>New end</label><input type="time" id="br-end" value="10:30" min="08:10" max="18:00"/></div>
+    </div>
+    <div class="modal-field"><label>Reason</label><textarea id="br-reason" placeholder="Explain why the edit is needed" style="height:100px;"></textarea></div>
+    <div class="modal-field"><label>Password</label><input type="password" class="lock-input" id="br-pw" placeholder="Agent password"/></div>
+    <div class="lock-err" id="br-err"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="br-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="br-ok-btn" style="background:var(--blue);">Request approval</button>
+    </div>
+  </div>
+</div>
+
 <!-- EXCEL IMPORT MODAL -->
 <div class="modal-overlay" id="excel-modal">
   <div class="modal" style="width:520px;max-width:95vw;">
@@ -508,6 +529,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <div class="updated-display" id="last-updated-display"></div>
       </div>
       <div class="mode-badge viewer" id="mode-badge">VIEWER</div>
+      <div class="mode-badge request-pip" id="request-pip" style="display:none;">0</div>
       <button class="layout-edit-btn" id="layout-edit-btn">⊞ Edit Layout</button>
       <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
       <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
@@ -542,6 +564,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="card" style="grid-column:1/-1;">
         <div class="card-header"><div class="card-title"><span class="pip pip-purple"></span>On leave</div><button class="add-btn" id="add-leave-btn">+ Add</button></div>
         <div id="leave-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-red"></span>Break edit requests</div></div>
+        <div id="break-requests-list"></div>
       </div>
       <div class="card">
         <div class="card-header"><div class="card-title"><span class="pip pip-teal"></span>Custom tasks</div><button class="add-btn" id="add-task-card-btn">+ Add</button></div>
@@ -705,6 +731,7 @@ const DEFAULT_DATA = {
   viewerLayout: DEFAULT_VIEWER_LAYOUT,
   customPanels: {},
   customTasks: [],
+  editRequests: [],
   topPerformers: {},
   lastUpdated: null,
 };
@@ -736,6 +763,7 @@ async function loadData(){
         viewerLayout:      d.viewerLayout      ?? DEFAULT_VIEWER_LAYOUT,
         customPanels:      d.customPanels      ?? {},
         customTasks:       d.customTasks       ?? DEFAULT_DATA.customTasks,
+        editRequests:      d.editRequests      ?? DEFAULT_DATA.editRequests,
         topPerformers:     d.topPerformers     ?? {},
         lastUpdated:       d.lastUpdated       ?? null,
       };
@@ -769,6 +797,7 @@ function attachRealtimeListener(){
       viewerLayout:      d.viewerLayout      ?? DEFAULT_VIEWER_LAYOUT,
       customPanels:      d.customPanels      ?? {},
       customTasks:       d.customTasks       ?? DEFAULT_DATA.customTasks,
+      editRequests:      d.editRequests      ?? DEFAULT_DATA.editRequests,
       topPerformers:     d.topPerformers     ?? {},
       lastUpdated:       d.lastUpdated       ?? null,
     };
@@ -888,10 +917,11 @@ function buildTimelinePanel(heightPx){
   ])];
   const rows=agents.map(ag=>{
     const bbs=[
-      ...DATA.coffeeBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'coffee'})),
-      ...DATA.lunchBreaks.filter(b=>b.agent===ag).map(b=>({...b,type:'lunch'}))
-    ].map(b=>`<div class="tl-bar tl-${b.type}"
+      ...DATA.coffeeBreaks.map((b,i)=>b.agent===ag?{...b,type:'coffee',idx:i}:null).filter(Boolean),
+      ...DATA.lunchBreaks.map((b,i)=>b.agent===ag?{...b,type:'lunch',idx:i}:null).filter(Boolean)
+    ].sort((a,b)=>a.start-b.start).map(b=>`<div class="tl-bar tl-${b.type}"
         style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%"
+        data-type="${b.type}" data-idx="${b.idx}" data-start="${b.start}" data-end="${b.end}"
         data-tip="${fmtM(b.start)}–${fmtM(b.end)} · ${b.type==='coffee'?'☕ Coffee break':'🍕 Lunch break'} · ${b.agent}"
       ></div>`).join('');
     const tks = (DATA.customTasks||[]).filter(t=>t.agent===ag).map(t=>{
@@ -1104,7 +1134,9 @@ function render(){
   renderRules();
   renderAgents();
   renderCustomTasks();
+  renderBreakRequests();
   renderMetrics();
+  renderRequestPip();
   renderViewerGrid();
   renderLastUpdated();
   renderTopPerformers();
@@ -1198,6 +1230,35 @@ function renderCustomTasks(){
       <button class="del-btn" data-action="task-delete" data-idx="${i}" title="Remove">✕</button>
     </div>`;
   }).join('');
+}
+
+function renderBreakRequests(){
+  const el=document.getElementById('break-requests-list'); if(!el) return;
+  if(!DATA.editRequests||!DATA.editRequests.length){ el.innerHTML='<div class="empty">No pending requests</div>'; return; }
+  el.innerHTML = DATA.editRequests.map((req,i)=>{
+    const now=nowMins(); const active=now>=req.originalStart&&now<req.originalEnd;
+    const badgeClass=active?'badge-now':'badge-coffee';
+    const originalTimes=fmtM(req.originalStart)+'–'+fmtM(req.originalEnd);
+    const requestedTimes=fmtM(req.requestedStart)+'–'+fmtM(req.requestedEnd);
+    return `<div class="break-row" data-id="${req.id}">
+      <div class="avatar" style="${avStyle(req.agent)}">${initials(req.agent)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;">${req.agent} · ${req.type.charAt(0).toUpperCase()+req.type.slice(1)} request</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">${originalTimes} → ${requestedTimes}</div>
+        <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:4px;white-space:normal;line-height:1.4;">${req.reason.replace(/</g,'&lt;')}</div>
+      </div>
+      <span class="badge ${badgeClass}">${requestedTimes}</span>
+      <button class="del-btn" data-action="request-approve" data-id="${req.id}" title="Approve">✓</button>
+      <button class="del-btn" data-action="request-decline" data-id="${req.id}" title="Decline">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function renderRequestPip(){
+  const el=document.getElementById('request-pip'); if(!el) return;
+  const count=(DATA.editRequests||[]).length;
+  if(count>0){ el.style.display='inline-flex'; el.textContent=count; }
+  else { el.style.display='none'; }
 }
 
 function renderLeaveList(){
@@ -1444,6 +1505,7 @@ function confirmCustomPanel(){
 // ─── CUSTOM TASK MODAL ───
 let _taskSelectedColor='blue';
 let _editingTaskIndex = null;
+let _breakRequestTarget = null;
 function populateTaskColorSwatches(){
   const container=document.getElementById('task-color-swatches'); if(!container) return; container.innerHTML='';
   ACCENT_COLORS.forEach(c=>{
@@ -1465,6 +1527,47 @@ function confirmAddTask(){
   if(_editingTaskIndex!==null){ DATA.customTasks[_editingTaskIndex]=entry; _editingTaskIndex=null; }
   else { if(!DATA.customTasks) DATA.customTasks=[]; DATA.customTasks.push(entry); }
   closeTaskModal(); render(); saveData();
+}
+
+function openBreakRequestModal(req){
+  _breakRequestTarget = req;
+  document.getElementById('br-agent').value = req.agent;
+  document.getElementById('br-type').value = req.type==='coffee' ? 'Coffee' : 'Lunch';
+  document.getElementById('br-start').value = pad(Math.floor(req.originalStart/60))+':'+pad(req.originalStart%60);
+  document.getElementById('br-end').value = pad(Math.floor(req.originalEnd/60))+':'+pad(req.originalEnd%60);
+  document.getElementById('br-reason').value = '';
+  document.getElementById('br-pw').value = '';
+  document.getElementById('br-err').textContent = '';
+  document.getElementById('break-request-modal').classList.add('open');
+}
+function closeBreakRequestModal(){ document.getElementById('break-request-modal').classList.remove('open'); _breakRequestTarget = null; }
+function confirmBreakRequest(){
+  if(!_breakRequestTarget) return;
+  const reason=document.getElementById('br-reason').value.trim();
+  const pw=document.getElementById('br-pw').value;
+  const errEl=document.getElementById('br-err'); errEl.textContent='';
+  if(!reason){ errEl.textContent='Enter a reason for the edit request.'; return; }
+  if(!pw){ errEl.textContent='Enter your password.'; return; }
+  const passwords=DATA.agentPasswords||{};
+  if(passwords[_breakRequestTarget.agent]!==pw){ errEl.textContent='Incorrect password.'; return; }
+  const [sh,sm]=document.getElementById('br-start').value.split(':').map(Number);
+  const [eh,em]=document.getElementById('br-end').value.split(':').map(Number);
+  const requestedStart=sh*60+sm, requestedEnd=eh*60+em;
+  if(requestedEnd<=requestedStart){ errEl.textContent='End time must be after start time.'; return; }
+  if(!DATA.editRequests) DATA.editRequests=[];
+  DATA.editRequests.push({
+    id:'req:'+Date.now()+Math.random().toString(36).slice(2,8),
+    agent:_breakRequestTarget.agent,
+    type:_breakRequestTarget.type,
+    originalStart:_breakRequestTarget.originalStart,
+    originalEnd:_breakRequestTarget.originalEnd,
+    requestedStart,
+    requestedEnd,
+    reason,
+    status:'pending',
+    createdAt:new Date().toISOString()
+  });
+  closeBreakRequestModal(); render(); saveData();
 }
 
 // ─── CLOCK ───
@@ -1791,11 +1894,43 @@ document.getElementById('add-task-btn').addEventListener('click',openTaskModal);
 document.getElementById('task-cancel-btn').addEventListener('click',closeTaskModal);
 document.getElementById('task-ok-btn').addEventListener('click',confirmAddTask);
 document.getElementById('add-task-card-btn').addEventListener('click',openTaskModal);
+document.getElementById('br-cancel-btn').addEventListener('click',closeBreakRequestModal);
+document.getElementById('br-ok-btn').addEventListener('click',confirmBreakRequest);
+
+function handleViewerBreakEditRequest(e){
+  const bar=e.target.closest('.tl-bar');
+  if(!bar||isAdminNow()) return;
+  const type=bar.dataset.type, idx=bar.dataset.idx;
+  if(!type||!idx) return;
+  const agent=bar.dataset.tip?.split('·').pop().trim()||'';
+  const originalStart=parseInt(bar.dataset.start,10), originalEnd=parseInt(bar.dataset.end,10);
+  openBreakRequestModal({type,idx:parseInt(idx,10),agent,originalStart,originalEnd});
+}
+
+document.getElementById('viewer-grid').addEventListener('dblclick',handleViewerBreakEditRequest);
+document.getElementById('viewer-grid').addEventListener('click',e=>{ if(e.detail===2) handleViewerBreakEditRequest(e); });
 
 document.getElementById('custom-tasks-list').addEventListener('click',e=>{
   const btn=e.target.closest('[data-action]'); if(!btn) return; const act=btn.dataset.action; const idx=parseInt(btn.dataset.idx);
   if(act==='task-delete'){ try{requireAdmin();}catch(e){return;} DATA.customTasks.splice(idx,1); render(); saveData(); }
   else if(act==='task-edit'){ try{requireAdmin();}catch(e){return;} const t=DATA.customTasks[idx]; if(!t) return; _editingTaskIndex=idx; document.getElementById('task-agent').value=t.agent; document.getElementById('task-title').value=t.title; document.getElementById('task-start').value=pad(Math.floor(t.start/60))+':'+pad(t.start%60); document.getElementById('task-end').value=pad(Math.floor(t.end/60))+':'+pad(t.end%60); _taskSelectedColor=t.color||'purple'; populateTaskColorSwatches(); document.getElementById('task-modal').classList.add('open'); }
+});
+
+document.getElementById('break-requests-list').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-action]'); if(!btn) return; const action=btn.dataset.action; const id=btn.dataset.id;
+  try{requireAdmin();}catch(e){return;}
+  const idx=DATA.editRequests.findIndex(r=>r.id===id); if(idx<0) return;
+  if(action==='request-approve'){
+    const req=DATA.editRequests[idx];
+    const breaks = req.type==='coffee'?DATA.coffeeBreaks:DATA.lunchBreaks;
+    const bidx = breaks.findIndex(b=>b.agent===req.agent&&b.start===req.originalStart&&b.end===req.originalEnd);
+    if(bidx>=0){ breaks[bidx].start=req.requestedStart; breaks[bidx].end=req.requestedEnd; }
+    DATA.editRequests.splice(idx,1);
+    render(); saveData();
+  } else if(action==='request-decline'){
+    DATA.editRequests.splice(idx,1);
+    render(); saveData();
+  }
 });
 document.getElementById('modal-cancel-btn').addEventListener('click',closeModal);
 document.getElementById('modal-ok-btn').addEventListener('click',confirmAddBreak);
