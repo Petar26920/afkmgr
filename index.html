@@ -619,6 +619,12 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
             <span id="tp-date-badge" style="font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);"></span>
           </div>
         </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <div style="min-width:220px;flex:1;max-width:320px;">
+            <label style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">Date</label>
+            <input type="date" id="tp-date" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;" />
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end;">
           <div>
             <label style="font-size:10px;color:var(--amber);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">💬 Chat top performer</label>
@@ -634,11 +640,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
           </div>
           <div>
             <label style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">Note (optional)</label>
-            <input type="text" id="tp-note" maxlength="80" placeholder="e.g. Highest tickets closed today" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"/>
+            <input type="text" id="tp-note" maxlength="80" placeholder="e.g. Highest tickets closed on this date" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"/>
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:10px;">
-          <button id="tp-save-btn" style="padding:7px 20px;background:var(--amber);color:#000;border:none;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">💾 Save today's top performers</button>
+          <button id="tp-save-btn" style="padding:7px 20px;background:var(--amber);color:#000;border:none;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">💾 Save top performers</button>
         </div>
         <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
           <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);margin-bottom:10px;">History</div>
@@ -1040,11 +1046,28 @@ function buildPatchingViewerContent(heightPx){
   </div>`;
 }
 
+function getTopPerformersDate(){
+  const el=document.getElementById('tp-date');
+  if(el && el.value) return el.value;
+  const d=new Date(); d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+
+function formatTopPerformersLabel(dateKey){
+  const today=new Date().toISOString().slice(0,10);
+  const d=new Date(); d.setDate(d.getDate()-1);
+  const yesterday=d.toISOString().slice(0,10);
+  if(dateKey===today) return 'today';
+  if(dateKey===yesterday) return 'yesterday';
+  return new Date(dateKey+'T12:00:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+}
+
 function buildTopPerformersContent(heightPx){
-  const today = new Date().toISOString().slice(0,10);
+  const dateKey = getTopPerformersDate();
   const tp = DATA.topPerformers || {};
-  const entry = tp[today];
+  const entry = tp[dateKey];
   const hStyle = heightPx ? `height:${heightPx}px;overflow:hidden;` : '';
+  const dateLabel = formatTopPerformersLabel(dateKey);
 
   const medals = ['🥇','🥈','🥉'];
   const colors = ['var(--amber)','#aab4c4','#cd7f32'];
@@ -1056,7 +1079,7 @@ function buildTopPerformersContent(heightPx){
   if(!entry || (!hasTopRanks && !hasTopCategories)){
     inner = `<div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;opacity:0.4;">
       <div style="font-size:28px;">🏆</div>
-      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">Not set for today</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">Not set for ${dateLabel}</div>
     </div>`;
   } else if(hasTopRanks) {
     const places = [
@@ -1096,9 +1119,10 @@ function buildTopPerformersContent(heightPx){
     </div>`;
   }
 
+  const titleLabel = formatTopPerformersLabel(dateKey);
   return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
     <div class="card-header" style="margin-bottom:8px;">
-      <div class="card-title"><span class="pip" style="background:var(--amber);"></span>Top performers · today</div>
+      <div class="card-title"><span class="pip" style="background:var(--amber);"></span>Top performers · ${titleLabel}</div>
     </div>
     ${inner}
   </div>`;
@@ -1307,12 +1331,18 @@ function populateAgentSelect(){
 
 // ─── TOP PERFORMERS ───
 function renderTopPerformers(){
-  const today = new Date().toISOString().slice(0,10);
   const tp = DATA.topPerformers || {};
-  const entry = tp[today] || {};
+  const selectedDate = getTopPerformersDate();
+  const entry = tp[selectedDate] || {};
+  const today = new Date().toISOString().slice(0,10);
+
+  const dateInput = document.getElementById('tp-date');
+  if(dateInput && !dateInput.value){
+    dateInput.value = selectedDate;
+  }
 
   const badge = document.getElementById('tp-date-badge');
-  if(badge) badge.textContent = new Date().toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
+  if(badge) badge.textContent = new Date(selectedDate+'T12:00:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
 
   const none = `<option value="">— none —</option>`;
   ['tp-chat','tp-phone','tp-tickets'].forEach(id=>{
@@ -1347,11 +1377,12 @@ function renderTopPerformers(){
   }).join('');
 }
 
-function saveTodayTopPerformers(){
+function saveTopPerformersEntry(){
   try{requireAdmin();}catch(e){return;}
-  const today = new Date().toISOString().slice(0,10);
+  const selectedDate = document.getElementById('tp-date')?.value || getTopPerformersDate();
+  if(!selectedDate) return;
   if(!DATA.topPerformers) DATA.topPerformers={};
-  DATA.topPerformers[today] = {
+  DATA.topPerformers[selectedDate] = {
     chat:    document.getElementById('tp-chat').value,
     phone:   document.getElementById('tp-phone').value,
     tickets: document.getElementById('tp-tickets').value,
@@ -1965,7 +1996,11 @@ document.getElementById('add-leave-btn').addEventListener('click',openLeaveModal
 document.getElementById('lv-cancel-btn').addEventListener('click',closeLeaveModal);
 document.getElementById('lv-ok-btn').addEventListener('click',confirmAddLeave);
 document.getElementById('lv-note').addEventListener('keydown',e=>{if(e.key==='Enter')confirmAddLeave();});
-document.getElementById('tp-save-btn').addEventListener('click',saveTodayTopPerformers);
+document.getElementById('tp-save-btn').addEventListener('click',saveTopPerformersEntry);
+const tpDateInput = document.getElementById('tp-date');
+if(tpDateInput){
+  tpDateInput.addEventListener('change',renderTopPerformers);
+}
 
 document.getElementById('app').addEventListener('change',e=>{
   const el=e.target,act=el.dataset.action,idx=parseInt(el.dataset.idx);
