@@ -621,20 +621,20 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end;">
           <div>
-            <label style="font-size:10px;color:var(--amber);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🥇 1st place</label>
-            <select id="tp-first" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+            <label style="font-size:10px;color:var(--amber);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">💬 Chat top performer</label>
+            <select id="tp-chat" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
           </div>
           <div>
-            <label style="font-size:10px;color:#aab4c4;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🥈 2nd place</label>
-            <select id="tp-second" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+            <label style="font-size:10px;color:#aab4c4;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">📞 Phone top performer</label>
+            <select id="tp-phone" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
           </div>
           <div>
-            <label style="font-size:10px;color:#cd7f32;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🥉 3rd place</label>
-            <select id="tp-third" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+            <label style="font-size:10px;color:#cd7f32;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🎫 Tickets closed</label>
+            <select id="tp-tickets" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
           </div>
           <div>
             <label style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">Note (optional)</label>
-            <input type="text" id="tp-note" maxlength="80" placeholder="e.g. Record tickets closed!" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"/>
+            <input type="text" id="tp-note" maxlength="80" placeholder="e.g. Highest tickets closed today" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"/>
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;margin-top:10px;">
@@ -1295,15 +1295,15 @@ function renderTopPerformers(){
   if(badge) badge.textContent = new Date().toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'});
 
   const none = `<option value="">— none —</option>`;
-  ['tp-first','tp-second','tp-third'].forEach(id=>{
+  ['tp-chat','tp-phone','tp-tickets'].forEach(id=>{
     const sel = document.getElementById(id); if(!sel) return;
     sel.innerHTML = none + DATA.agents.map(a=>`<option value="${a}">${a}</option>`).join('');
   });
-  const f=document.getElementById('tp-first'), s=document.getElementById('tp-second'), t=document.getElementById('tp-third'), n=document.getElementById('tp-note');
-  if(f) f.value = entry.first  || '';
-  if(s) s.value = entry.second || '';
-  if(t) t.value = entry.third  || '';
-  if(n) n.value = entry.note   || '';
+  const c=document.getElementById('tp-chat'), p=document.getElementById('tp-phone'), t=document.getElementById('tp-tickets'), n=document.getElementById('tp-note');
+  if(c) c.value = entry.chat    || '';
+  if(p) p.value = entry.phone   || '';
+  if(t) t.value = entry.tickets || '';
+  if(n) n.value = entry.note    || '';
 
   const hist = document.getElementById('tp-history'); if(!hist) return;
   const sorted = Object.entries(tp).sort((a,b)=>b[0].localeCompare(a[0]));
@@ -1311,16 +1311,16 @@ function renderTopPerformers(){
   hist.innerHTML = sorted.map(([date, e])=>{
     const d = new Date(date+'T12:00:00');
     const isToday = date===today;
-    const places = [
-      e.first  ? `<span style="color:var(--amber);">🥇 ${e.first}</span>`  : '',
-      e.second ? `<span style="color:#aab4c4;">🥈 ${e.second}</span>` : '',
-      e.third  ? `<span style="color:#cd7f32;">🥉 ${e.third}</span>`  : '',
+    const entries = [
+      e.chat    ? `<span style="color:var(--amber);">💬 ${e.chat}</span>`    : '',
+      e.phone   ? `<span style="color:#aab4c4;">📞 ${e.phone}</span>`   : '',
+      e.tickets ? `<span style="color:#cd7f32;">🎫 ${e.tickets}</span>` : '',
     ].filter(Boolean).join('<span style="color:var(--muted2);padding:0 6px;">·</span>');
     return `<div style="display:flex;align-items:center;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);">
       <div style="min-width:130px;flex-shrink:0;">
         <div style="font-size:12px;font-weight:700;color:${isToday?'var(--amber)':'var(--text)'};">${isToday?'Today · ':''}${d.toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'})}</div>
       </div>
-      <div style="flex:1;font-size:12px;display:flex;flex-wrap:wrap;gap:4px;">${places||'<span style="color:var(--muted);">—</span>'}</div>
+      <div style="flex:1;font-size:12px;display:flex;flex-wrap:wrap;gap:4px;">${entries||'<span style="color:var(--muted);">—</span>'}</div>
       ${e.note?`<div style="font-size:11px;color:var(--muted);font-family:var(--mono);max-width:200px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${e.note}</div>`:''}
       <button style="background:none;border:none;color:var(--muted2);font-size:13px;cursor:pointer;padding:2px 5px;border-radius:4px;line-height:1;flex-shrink:0;" data-action="tp-delete" data-date="${date}" title="Delete">✕</button>
     </div>`;
@@ -1332,10 +1332,10 @@ function saveTodayTopPerformers(){
   const today = new Date().toISOString().slice(0,10);
   if(!DATA.topPerformers) DATA.topPerformers={};
   DATA.topPerformers[today] = {
-    first:  document.getElementById('tp-first').value,
-    second: document.getElementById('tp-second').value,
-    third:  document.getElementById('tp-third').value,
-    note:   document.getElementById('tp-note').value.trim(),
+    chat:    document.getElementById('tp-chat').value,
+    phone:   document.getElementById('tp-phone').value,
+    tickets: document.getElementById('tp-tickets').value,
+    note:    document.getElementById('tp-note').value.trim(),
   };
   renderTopPerformers();
   renderViewerGrid();
