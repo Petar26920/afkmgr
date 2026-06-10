@@ -92,6 +92,38 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .add-btn:hover{color:var(--text);border-color:var(--blue);background:var(--blue2);}
 .admin-mode .add-btn{display:inline-flex;align-items:center;gap:4px;}
 
+.shift-nav-btn{font-size:12px;font-weight:600;padding:8px 12px;border-radius:10px;background:var(--surface3);border:1px solid var(--border2);color:var(--text);cursor:pointer;font-family:var(--mono);transition:all 0.15s;}
+.shift-nav-btn:hover{color:var(--blue);border-color:var(--blue2);background:var(--surface2);}
+.shift-manager-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.shift-manager-nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.shift-manager-title{font-size:15px;font-weight:700;color:var(--text);}
+.shift-manager-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.shift-manager-panel{border:1px solid var(--border2);border-radius:18px;background:var(--surface2);padding:16px;}
+.shift-manager-single-panel{border:1px solid rgba(255,255,255,0.06);border-radius:18px;background:rgba(255,255,255,0.02);padding:12px;display:grid;gap:8px;opacity:0.88;}
+.shift-manager-single-title{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.08em;}
+.shift-manager-single-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:14px;background:rgba(255,255,255,0.01);transition:background 0.18s;}
+.shift-manager-single-row:hover{background:rgba(255,255,255,0.03);}
+.shift-manager-single-name{font-size:12px;color:var(--text);font-weight:600;}
+.shift-manager-single-time{font-size:11px;color:var(--muted);padding:4px 8px;border-radius:999px;background:rgba(255,255,255,0.05);}
+.shift-manager-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.shift-manager-special-grid{grid-template-columns:1.1fr .9fr;grid-auto-rows:minmax(220px,1fr);}
+.shift-manager-other-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:14px;}
+.shift-manager-left-column{display:grid;grid-template-rows:1fr 1fr;gap:14px;}
+.shift-manager-right-column{display:grid;gap:14px;}
+.shift-manager-half{min-height:0;display:flex;flex-direction:column;}
+.shift-manager-single-list{display:grid;gap:10px;overflow:auto;}
+.shift-manager-card{border:1px solid var(--border2);border-radius:18px;background:var(--surface2);padding:18px;display:flex;flex-direction:column;min-height:180px;}
+.shift-manager-single-card{opacity:0.88;}
+.shift-manager-single-card .shift-manager-card-meta{color:var(--muted);}
+.shift-manager-single-card .shift-manager-card-title{font-size:13px;font-weight:700;color:var(--text);}
+.shift-manager-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;}
+.shift-manager-card-title{font-size:13px;font-weight:700;color:var(--text);}
+.shift-manager-card-meta{font-size:11px;color:var(--muted);margin-top:6px;}
+.shift-manager-count{font-size:11px;color:var(--muted);padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.04);}
+.shift-manager-assignments{flex:1 1 auto;display:flex;flex-direction:column;gap:10px;}
+.shift-manager-agent-pill{display:inline-flex;padding:10px 14px;border-radius:999px;background:var(--bg);color:var(--text);font-size:12px;}
+.shift-manager-empty{padding:22px;border:1px solid var(--border2);border-radius:18px;background:var(--surface);color:var(--muted);text-align:center;}
+
 .break-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);animation:fadeIn 0.2s;}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 .break-row:last-child{border-bottom:none;}
@@ -275,8 +307,9 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .le-hint{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .le-hint-icon{font-size:14px;}
 
-.le-row{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;position:relative;min-height:60px;}
-.le-snap-col{background:rgba(255,255,255,0.018);border:1px solid rgba(255,255,255,0.04);border-radius:3px;pointer-events:none;}
+.le-row{display:grid;grid-template-columns:repeat(12,1fr);gap:8px;position:relative;min-height:70px;transition:box-shadow 0.15s,border-color 0.15s;background:repeating-linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.02) calc(100%/12 - 1px), rgba(255,255,255,0.04) calc(100%/12 - 1px), rgba(255,255,255,0.04) calc(100%/12));}
+.le-row.drag-over{box-shadow:0 0 0 2px rgba(56,190,146,0.22);border-color:rgba(56,190,146,0.35);}
+.le-snap-col{display:none;}
 
 .le-tile{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;display:flex;flex-direction:column;gap:5px;cursor:grab;position:relative;overflow:hidden;transition:border-color 0.15s,box-shadow 0.15s;min-width:0;grid-row:1;}
 .le-tile:hover{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue);}
@@ -289,6 +322,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .le-tile-hidden-overlay span{font-size:20px;}
 
 .le-tile-controls{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+.le-tile-width-bar{height:6px;border-radius:999px;background:rgba(255,255,255,0.06);overflow:hidden;margin-top:6px;}
+.le-tile-width-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,rgba(56,190,146,0.95),rgba(56,190,146,0.35));transition:width 0.15s ease;}
 .le-span-btn{width:20px;height:20px;border-radius:3px;border:1px solid var(--border2);background:var(--surface3);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;font-family:var(--mono);transition:all 0.12s;line-height:1;flex-shrink:0;}
 .le-span-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue2);}
 .le-span-btn.danger:hover{border-color:var(--red);color:var(--red);background:var(--red2);}
@@ -747,6 +782,7 @@ const ACCENT_COLORS = [
 const DEFAULT_VIEWER_LAYOUT = [
   { panels:[{id:'timeline',span:9,visible:true},{id:'leave-panel',span:3,visible:true}] },
   { panels:[{id:'triage-strip',span:7,visible:true},{id:'patching-v',span:5,visible:true}] },
+  { panels:[{id:'shift-manager',span:12,visible:true}] },
 ];
 
 const DEFAULT_DATA = {
@@ -794,6 +830,22 @@ const DEFAULT_DATA = {
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let activeModalType = 'coffee';
 let _firestoreAvailable = true;
+let shiftManagerViewDate = null;
+
+function loadShiftManagerViewDate(){
+  try{
+    const stored = sessionStorage.getItem('shiftManagerViewDate');
+    if(stored){
+      const d = new Date(stored);
+      if(!isNaN(d)) shiftManagerViewDate = formatDateKey(d);
+    }
+  }catch(e){ shiftManagerViewDate = null; }
+}
+function setShiftManagerViewDate(dateStr){
+  shiftManagerViewDate = dateStr;
+  try{ sessionStorage.setItem('shiftManagerViewDate', dateStr); }catch(e){}
+}
+loadShiftManagerViewDate();
 
 function normalizeData(d){
   return {
@@ -835,6 +887,20 @@ function stripMiddleInitials(name){
   return filtered.join(' ');
 }
 
+function getCurrentISOWeek(){
+  const now = new Date();
+  const target = new Date(now.valueOf());
+  const dayNr = (now.getDay() + 6) % 7; // Monday=0, Sunday=6
+  target.setDate(target.getDate() - dayNr + 3); // move to Thursday of current week
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const diff = target - firstThursday;
+  return 1 + Math.round(diff / 604800000);
+}
+
+function getCurrentPatchWeek(){
+  return `Week ${getCurrentISOWeek()}`;
+}
+
 function findAgentMatch(name){
   const trimmed = String(name||'').trim();
   if(!trimmed) return '';
@@ -858,6 +924,18 @@ function parseShiftAgents(value){
 function formatShiftAgents(agents){
   if(!agents || !agents.length) return '—';
   return agents.map(agent => `<div style="margin-bottom:4px;">${agent}</div>`).join('');
+}
+
+function getScheduleDisplayName(agent, allAgents){
+  const parts = String(agent||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return agent;
+  const firstName = parts[0];
+  const duplicates = allAgents.filter(a=>String(a||'').trim().split(/\s+/).filter(Boolean)[0] === firstName);
+  if(duplicates.length > 1){
+    const surname = parts.length > 1 ? parts[parts.length-1] : '';
+    return surname ? `${firstName} ${surname[0]}` : firstName;
+  }
+  return firstName;
 }
 
 function getShiftLabel(id){
@@ -1135,7 +1213,7 @@ function buildPatchingViewerContent(heightPx){
   return `<div class="card" style="height:100%;${hStyle}">
     <div class="card-header"><div class="card-title"><span class="pip pip-purple"></span>Patching agent</div></div>
     <div class="patching-section">
-      <div class="patching-week">${DATA.patchWeek||'Week —'}</div>
+      <div class="patching-week">${getCurrentPatchWeek()}</div>
       <span style="font-size:18px;font-weight:800;color:var(--purple);">${DATA.patchingAgent||'—'}</span>
     </div>
   </div>`;
@@ -1245,7 +1323,7 @@ function formatDateKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).p
 function buildShiftManagerContent(heightPx){
   const hStyle = heightPx ? `height:${heightPx}px;overflow:auto;` : '';
   const today = new Date();
-  const viewDate = DATA.shiftManagerViewDate ? new Date(DATA.shiftManagerViewDate) : today;
+  const viewDate = shiftManagerViewDate ? new Date(shiftManagerViewDate) : today;
   const dayIndex = (viewDate.getDay() + 6) % 7;
   const viewDateStr = formatDateKey(viewDate);
   const viewDateLabel = viewDate.toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'});
@@ -1264,47 +1342,123 @@ function buildShiftManagerContent(heightPx){
   };
   viewShiftIds.sort((a,b)=>parseShiftStart(a) - parseShiftStart(b));
   const isAdmin = isAdminNow();
+  // group out-of-hours single-person shifts into separate cards
+  const singleShiftIds = ['shift-02-08','shift-02-10','shift-12-20','shift-18-02'];
+  const groupedAssigned = [];
+  singleShiftIds.forEach(id => {
+    if(!viewShiftIds.includes(id)) return;
+    const key = `${viewDateStr}:${id}`;
+    const assigned = parseShiftAgents(shifts[key]).filter(a=>agentInSchedule(a));
+    if(assigned && assigned.length) groupedAssigned.push({id,assigned});
+  });
+  // remove grouped ids from the normal grid
+  const remainingShiftIds = viewShiftIds.filter(id=>!singleShiftIds.includes(id));
 
-  let rows = `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
-      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <button type="button" class="add-btn" data-action="shift-prev-day" style="background:transparent;border-color:var(--border);color:var(--text);font-size:14px;padding:8px 10px;cursor:pointer;">◀</button>
+  let rows = `<div class="shift-manager-row">
+      <div class="shift-manager-nav">
+        <button type="button" class="shift-nav-btn" data-action="shift-prev-day">◀</button>
         <div>
-          <div style="font-size:15px;font-weight:700;color:var(--text);">${isToday ? 'Today' : 'View'} · ${viewDateLabel}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:4px;">Use ◀ / ▶ to view other days</div>
+          <div class="shift-manager-title">${isToday ? 'Today' : 'View'} · ${viewDateLabel}</div>
+          <div class="shift-manager-sub">Use ◀ / ▶ to browse days, or click Today.</div>
         </div>
-        <button type="button" class="add-btn" data-action="shift-next-day" style="background:transparent;border-color:var(--border);color:var(--text);font-size:14px;padding:8px 10px;cursor:pointer;">▶</button>
+        <button type="button" class="shift-nav-btn" data-action="shift-next-day">▶</button>
+        <button type="button" class="shift-nav-btn" data-action="shift-today">Today</button>
       </div>
-      ${isAdmin ? `<button class="add-btn" data-action="open-shift-import" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);font-size:11px;padding:8px 12px;">📋 Import shifts</button>` : ''}
+      ${isAdmin ? `<button type="button" class="shift-nav-btn" data-action="open-shift-import" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);font-size:12px;padding:8px 14px;">📋 Import shifts</button>` : ''}
     </div>`;
 
-  if(!viewShiftIds.length){
-    rows += `<div style="padding:22px;border:1px solid var(--border2);border-radius:18px;background:var(--surface);color:var(--muted);text-align:center;">No shifts found for ${viewDateLabel}.</div>`;
-  } else {
-    rows += `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;">`;
-    let hasVisibleShifts = false;
-    viewShiftIds.forEach(shiftId => {
-      const key = `${viewDateStr}:${shiftId}`;
-      const assigned = parseShiftAgents(shifts[key]).filter(a=>agentInSchedule(a));
-      if(assigned.length === 0) return;
-      hasVisibleShifts = true;
-      rows += `<div style="border:1px solid var(--border2);border-radius:18px;background:var(--surface2);padding:16px;display:flex;flex-direction:column;min-height:180px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px;">
+  const specialLeftShift = 'shift-08-16';
+  const specialRightShift = 'shift-10-18';
+  const leftAssigned = remainingShiftIds.includes(specialLeftShift)
+    ? parseShiftAgents(shifts[`${viewDateStr}:${specialLeftShift}`]).filter(a=>agentInSchedule(a))
+    : [];
+  const rightAssigned = remainingShiftIds.includes(specialRightShift)
+    ? parseShiftAgents(shifts[`${viewDateStr}:${specialRightShift}`]).filter(a=>agentInSchedule(a))
+    : [];
+  const otherShiftIds = remainingShiftIds.filter(id => id !== specialLeftShift && id !== specialRightShift);
+
+  const renderCard = (shiftId, assigned, opts={}) => {
+    const grouped = opts.grouped || false;
+    const label = opts.label || shiftIdToLabel(shiftId);
+    const meta = opts.meta || (grouped ? 'Single-person shift' : (knownShiftIds.includes(shiftId) ? 'Scheduled shift' : 'Custom assignment'));
+    const extraSelect = isAdmin ? `<div style="margin-top:16px;"><select data-action="shift-assign" data-date="${viewDateStr}" data-shift="${shiftId}" multiple size="4" style="width:100%;min-height:90px;padding:10px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;line-height:1.4;">${DATA.agents.filter(agent=>agentInSchedule(agent)).map(agent => `<option value="${agent}" ${assigned.includes(agent) ? 'selected' : ''}>${agent}</option>`).join('')}</select></div>` : '';
+    return `<div class="shift-manager-card${grouped ? ' shift-manager-single-card' : ''}">
+          <div class="shift-manager-card-header">
             <div>
-              <div style="font-size:13px;font-weight:700;color:var(--text);">${shiftIdToLabel(shiftId)}</div>
-              <div style="font-size:11px;color:var(--muted);margin-top:6px;">${knownShiftIds.includes(shiftId) ? 'Scheduled shift' : 'Custom assignment'}</div>
+              <div class="shift-manager-card-title">${label}</div>
+              <div class="shift-manager-card-meta">${meta}</div>
             </div>
-            <div style="font-size:11px;color:var(--muted);padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.05);">${assigned.length} assigned</div>
+            <div class="shift-manager-count">${assigned.length} assigned</div>
           </div>
-          <div style="flex:1 1 auto;display:flex;flex-direction:column;gap:8px;">
-            ${assigned.map(agent => `<span style="display:inline-flex;padding:9px 12px;border-radius:999px;background:var(--bg);color:var(--text);font-size:12px;">${agent}</span>`).join('')}
+          <div class="shift-manager-assignments">
+            ${assigned.map(agent => `<span class="shift-manager-agent-pill">${getScheduleDisplayName(agent, assigned)}</span>`).join('')}
           </div>
-          ${isAdmin ? `<div style="margin-top:14px;"><select data-action="shift-assign" data-date="${viewDateStr}" data-shift="${shiftId}" multiple size="4" style="width:100%;min-height:90px;padding:10px;border-radius:14px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;line-height:1.4;">${DATA.agents.filter(agent=>agentInSchedule(agent)).map(agent => `<option value="${agent}" ${assigned.includes(agent) ? 'selected' : ''}>${agent}</option>`).join('')}</select></div>` : ''}
+          ${extraSelect}
         </div>`;
+  };
+
+  const renderSinglePersonBlock = () => {
+    if(groupedAssigned.length === 0) return '';
+    return `<div class="shift-manager-card shift-manager-single-card shift-manager-half">
+          <div class="shift-manager-card-header">
+            <div>
+              <div class="shift-manager-card-title">Single-person shifts</div>
+              <div class="shift-manager-card-meta">Out-of-hours coverage</div>
+            </div>
+            <div class="shift-manager-count">${groupedAssigned.length} shift${groupedAssigned.length===1?'':'s'}</div>
+          </div>
+          <div class="shift-manager-assignments shift-manager-single-list">
+            ${groupedAssigned.map(item => {
+              const agent = item.assigned[0];
+              return `<div class="shift-manager-single-row"><span>${getScheduleDisplayName(agent, item.assigned)}</span><span class="shift-manager-single-time">${shiftIdToLabel(item.id)}</span></div>`;
+            }).join('')}
+          </div>
+        </div>`;
+  };
+
+  const renderOtherCards = () => {
+    if(otherShiftIds.length === 0) return '';
+    let html = `<div class="shift-manager-grid shift-manager-other-grid">`;
+    otherShiftIds.forEach(shiftId => {
+      const assigned = parseShiftAgents(shifts[`${viewDateStr}:${shiftId}`]).filter(a=>agentInSchedule(a));
+      if(assigned.length === 0) return;
+      html += renderCard(shiftId, assigned, { grouped: false });
     });
-    if(!hasVisibleShifts){
-      rows += `<div style="padding:22px;border:1px solid var(--border2);border-radius:18px;background:var(--surface);color:var(--muted);text-align:center;">No visible agents assigned to shifts for ${viewDateLabel}.</div>`;
+    html += `</div>`;
+    return html;
+  };
+
+  if(leftAssigned.length && rightAssigned.length && groupedAssigned.length){
+    rows += `<div class="shift-manager-grid shift-manager-special-grid">
+      <div class="shift-manager-left-column">
+        ${renderCard(specialLeftShift, leftAssigned, { grouped: false })}
+        ${renderSinglePersonBlock()}
+      </div>
+      <div class="shift-manager-right-column">
+        ${renderCard(specialRightShift, rightAssigned, { grouped: false })}
+      </div>
+    </div>`;
+    rows += renderOtherCards();
+  } else {
+    const cards = [];
+    remainingShiftIds.forEach(shiftId => {
+      const assigned = parseShiftAgents(shifts[`${viewDateStr}:${shiftId}`]).filter(a=>agentInSchedule(a));
+      if(assigned.length === 0) return;
+      cards.push({ id: shiftId, assigned, grouped: false });
+    });
+    groupedAssigned.forEach(item => {
+      cards.push({ id: item.id, assigned: item.assigned, grouped: true });
+    });
+
+    if(cards.length === 0){
+      rows += `<div class="shift-manager-empty">No shifts found for ${viewDateLabel}.</div>`;
+    } else {
+      rows += `<div class="shift-manager-grid">`;
+      cards.forEach(card => {
+        rows += renderCard(card.id, card.assigned, { grouped: card.grouped });
+      });
+      rows += `</div>`;
     }
-    rows += `</div>`;
   }
 
   return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
@@ -1346,14 +1500,15 @@ function renderViewerGrid(){
   const grid=document.getElementById('viewer-grid');
   const layout=getViewerLayout();
   let html='';
-  for(const row of layout){
-    for(const panel of row.panels){
-      if(!panel.visible) continue;
+  layout.forEach((row,rowIdx)=>{
+    row.panels.forEach(panel=>{
+      if(!panel.visible) return;
       const cs=Math.max(1,Math.min(12,panel.span||6));
+      const start=Math.max(1,Math.min(13-cs,panel.start||1));
       const heightPx=panel.height||null;
-      html+=`<div class="viewer-panel" style="grid-column:span ${cs};">${buildPanelContent(panel.id, heightPx)}</div>`;
-    }
-  }
+      html+=`<div class="viewer-panel" style="grid-row:${rowIdx+1};grid-column:${start} / span ${cs};">${buildPanelContent(panel.id, heightPx)}</div>`;
+    });
+  });
   grid.innerHTML=html;
 }
 
@@ -1415,8 +1570,8 @@ function renderPatching(){
   const pd=document.getElementById('patch-display'), pi=document.getElementById('patch-input'), pw=document.getElementById('patch-week-badge');
   if(pd) pd.textContent=DATA.patchingAgent||'—';
   if(pi) pi.value=DATA.patchingAgent||'';
-  if(pw) pw.textContent=DATA.patchWeek||'Week —';
-  const ps=document.getElementById('m-patch-week-sub'); if(ps) ps.textContent=DATA.patchWeek||'this week';
+  if(pw) pw.textContent=getCurrentPatchWeek();
+  const ps=document.getElementById('m-patch-week-sub'); if(ps) ps.textContent=getCurrentPatchWeek();
 }
 
 function renderRules(){
@@ -1515,7 +1670,7 @@ function renderMetrics(){
   document.getElementById('m-afk-sub').textContent=afk.length?afk.slice(0,5).map(n=>n.split(' ')[0]).join(', '):'none right now';
   document.getElementById('m-triage').textContent=triN?triN.agent:'—';
   document.getElementById('m-patch-val').textContent=DATA.patchingAgent||'—';
-  const ps=document.getElementById('m-patch-week-sub'); if(ps) ps.textContent=DATA.patchWeek||'this week';
+  const ps=document.getElementById('m-patch-week-sub'); if(ps) ps.textContent=getCurrentPatchWeek();
 }
 
 function populateAgentSelect(){
@@ -2028,15 +2183,40 @@ function renderLayoutEditor(){
     rowEl.className='le-row';
     rowEl.dataset.rowIdx=rowIdx;
 
-    for(let c=0;c<12;c++){
-      const col=document.createElement('div');
-      col.className='le-snap-col';
-      col.style.cssText=`grid-column:${c+1};grid-row:1;`;
-      rowEl.appendChild(col);
-    }
+    const rowPanels=row.panels||[];
+    let currentCol=1;
+    const normalizedPanels = rowPanels
+      .map(panel=>({ ...panel }))
+      .sort((a,b)=> (a.start||0) - (b.start||0))
+      .map(panel=>{
+        const span=Math.max(1,Math.min(12,panel.span||6));
+        if(!panel.start || panel.start < currentCol) panel.start=currentCol;
+        if(panel.start > 13-span) panel.start = 13-span;
+        currentCol = panel.start + span;
+        return panel;
+      });
+    row.panels = normalizedPanels;
 
-    row.panels.forEach((panel,panelIdx)=>{
-      rowEl.appendChild(buildTileEl(panel,panelIdx,rowIdx));
+    normalizedPanels.forEach((panel,panelIdx)=>{
+      rowEl.appendChild(buildTileEl(panel,panelIdx,rowIdx,panel.start));
+    });
+
+    rowEl.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move'; rowEl.classList.add('drag-over');});
+    rowEl.addEventListener('dragleave',()=>rowEl.classList.remove('drag-over'));
+    rowEl.addEventListener('drop',e=>{
+      e.preventDefault();rowEl.classList.remove('drag-over');
+      if(!leDragSrc) return;
+      const src=leDragSrc; leDragSrc=null;
+      const srcRow=leLayout[src.rowIdx];
+      const [moved]=srcRow.panels.splice(src.panelIdx,1);
+      const dstRow=leLayout[rowIdx];
+      if(srcRow.panels.length===0 && srcRow!==dstRow){
+        const removeIndex=leLayout.findIndex(r=>r===srcRow);
+        if(removeIndex>-1) leLayout.splice(removeIndex,1);
+      }
+      moved.start = getDropColumnForRow(rowEl, e);
+      placePanelInRow(dstRow, moved);
+      renderLayoutEditor();
     });
 
     rowWrap.appendChild(rowEl);
@@ -2051,12 +2231,43 @@ function renderLayoutEditor(){
   renderPanelPicker();
 }
 
-function buildTileEl(panel,panelIdx,rowIdx){
+function getDropColumnForRow(rowEl,e){
+  const rect=rowEl.getBoundingClientRect();
+  const x=Math.min(Math.max(e.clientX-rect.left,0),rect.width-1);
+  const col=Math.floor(x/(rect.width/12))+1;
+  return Math.min(Math.max(col,1),12);
+}
+
+function placePanelInRow(row,panel){
+  const span=Math.max(1,Math.min(12,panel.span||6));
+  panel.start = Math.min(Math.max(panel.start||1,1),13-span);
+  const occupied=[];
+  row.panels.forEach(p=>{
+    const start=p.start||1;
+    const len=Math.max(1,Math.min(12,p.span||6));
+    for(let c=start;c<start+len;c++) occupied.push(c);
+  });
+  const tryStart=(col)=>{
+    for(let c=col;c<col+span;c++){
+      if(c>12||occupied.includes(c)) return false;
+    }
+    return true;
+  };
+  if(!tryStart(panel.start)){
+    let found=null;
+    for(let c=panel.start;c>=1;c--){ if(tryStart(c)){ found=c; break; }}
+    if(found===null){ for(let c=panel.start+1;c<=13-span;c++){ if(tryStart(c)){ found=c; break; } }}
+    panel.start = found || 1;
+  }
+  row.panels.push(panel);
+}
+
+function buildTileEl(panel,panelIdx,rowIdx,startCol){
   const span=Math.max(1,Math.min(12,panel.span||6));
   const heightPx=panel.height||null;
   const tile=document.createElement('div');
   tile.className='le-tile'+(panel.visible===false?' ':'');
-  tile.style.cssText=`grid-column:span ${span};grid-row:1;`;
+  tile.style.cssText=`grid-column:${startCol} / span ${span};grid-row:1;`;
   if(heightPx) tile.style.height=heightPx+'px';
   tile.draggable=true;
   tile.dataset.rowIdx=rowIdx;
@@ -2090,6 +2301,7 @@ function buildTileEl(panel,panelIdx,rowIdx){
       ${editBtn}
       <button class="le-span-btn danger" data-le-action="remove-panel" data-row="${rowIdx}" data-panel="${panelIdx}" title="Remove panel">✕</button>
     </div>
+    <div class="le-tile-width-bar"><div class="le-tile-width-fill" style="width:${Math.round((span/12)*100)}%;"></div></div>
     ${panel.visible===false?'<div class="le-tile-hidden-overlay"><span>🙈</span></div>':''}
     <div class="le-resize-handle" data-le-action="resize-start" data-row="${rowIdx}" data-panel="${panelIdx}"></div>
   `;
@@ -2103,19 +2315,18 @@ function buildTileEl(panel,panelIdx,rowIdx){
   tile.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';tile.classList.add('drag-over');});
   tile.addEventListener('dragleave',()=>tile.classList.remove('drag-over'));
   tile.addEventListener('drop',e=>{
-    e.preventDefault(); tile.classList.remove('drag-over');
+    e.preventDefault();
+    e.stopPropagation();
+    tile.classList.remove('drag-over');
     if(!leDragSrc) return;
     const src=leDragSrc; leDragSrc=null;
     if(src.rowIdx===rowIdx&&src.panelIdx===panelIdx) return;
     const srcRow=leLayout[src.rowIdx];
-    const dstRow=leLayout[rowIdx];
     const [moved]=srcRow.panels.splice(src.panelIdx,1);
     if(srcRow.panels.length===0&&src.rowIdx!==rowIdx) leLayout.splice(src.rowIdx,1);
-    const dstRowNow=leLayout.find(r=>r===dstRow)||leLayout[rowIdx];
-    if(dstRowNow){
-      const ni=dstRowNow.panels.findIndex((_,i)=>i===panelIdx);
-      dstRowNow.panels.splice(Math.max(0,ni),0,moved);
-    }
+    const dstRow=leLayout[rowIdx];
+    moved.start = getDropColumnForRow(tile.closest('.le-row'), e);
+    placePanelInRow(dstRow, moved);
     renderLayoutEditor();
   });
 
@@ -2401,8 +2612,9 @@ document.getElementById('app').addEventListener('click',e=>{
   }else if(act==='agent-pw-toggle'){const wrap=el.closest('.agent-pw-wrap');const inp=wrap.querySelector('.agent-pw-input');inp.type=inp.type==='password'?'text':'password';el.textContent=inp.type==='password'?'👁':'🙈';
   }else if(act==='tp-delete'){try{requireAdmin();}catch(e){return;}const date=el.dataset.date;if(DATA.topPerformers&&DATA.topPerformers[date]){delete DATA.topPerformers[date];renderTopPerformers();renderViewerGrid();saveData();}
   }else if(act==='open-shift-import'){openShiftImportModal();
-  }else if(act==='shift-prev-day'){const d=new Date(DATA.shiftManagerViewDate||new Date());d.setDate(d.getDate()-1);DATA.shiftManagerViewDate=formatDateKey(d);render();saveData();
-  }else if(act==='shift-next-day'){const d=new Date(DATA.shiftManagerViewDate||new Date());d.setDate(d.getDate()+1);DATA.shiftManagerViewDate=formatDateKey(d);render();saveData();
+  }else if(act==='shift-prev-day'){const d=new Date(shiftManagerViewDate||new Date());d.setDate(d.getDate()-1);setShiftManagerViewDate(formatDateKey(d));render();
+  }else if(act==='shift-next-day'){const d=new Date(shiftManagerViewDate||new Date());d.setDate(d.getDate()+1);setShiftManagerViewDate(formatDateKey(d));render();
+  }else if(act==='shift-today'){setShiftManagerViewDate(formatDateKey(new Date()));render();
   }
 });
 
