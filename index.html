@@ -44,7 +44,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .logo-badge{font-family:var(--mono);font-size:10px;font-weight:500;padding:4px 10px;border-radius:4px;border:1px solid var(--blue2);color:var(--blue);background:var(--blue2);letter-spacing:0.08em;}
 .header-title{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
 .header-title span{color:var(--muted);font-weight:400;font-size:13px;margin-left:4px;}
-.header-right{display:flex;align-items:center;gap:10px;}
+.header-right{display:flex;align-items:center;gap:10px;position:relative;}
+.nav-burger-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:10px;background:var(--surface2);color:var(--text);font-size:18px;cursor:pointer;transition:all 0.2s;}
+.nav-burger-btn:hover{background:var(--surface3);transform:translateY(-1px);}
+.nav-actions{display:flex;align-items:center;gap:10px;}
+.nav-actions button{white-space:nowrap;}
 .clock-display{font-family:var(--mono);font-size:20px;font-weight:400;color:var(--text);letter-spacing:0.06em;}
 .date-display{font-size:11px;color:var(--muted);text-align:right;margin-top:1px;}
 .updated-display{font-size:10px;color:var(--muted2);text-align:right;margin-top:2px;font-family:var(--mono);}
@@ -316,6 +320,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   .phone-current-timeline .phone-timeline-badge{width:100%;text-align:center;}
   .phone-timeline-panel{display:none !important;}
   #viewer-grid, .viewer-panel{display:none !important;}
+  .nav-burger-btn{display:inline-flex;}
+  .nav-actions{display:none;position:absolute;right:0;top:100%;background:var(--surface);border:1px solid var(--border2);border-radius:16px;box-shadow:0 18px 36px rgba(0,0,0,0.25);padding:10px;flex-direction:column;align-items:flex-end;width:calc(100vw - 40px);max-width:220px;z-index:200;}
+  .header-right.menu-open .nav-actions{display:flex;}
+  .nav-actions button{width:100%;text-align:left;}
 }
 
 #layout-editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:600;display:none;flex-direction:column;backdrop-filter:blur(6px);}
@@ -658,8 +666,11 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="mode-badge request-pip" id="request-pip" style="display:none;">0</div>
       <button class="layout-edit-btn" id="layout-edit-btn">⊞ Edit Layout</button>
       <button class="layout-edit-btn phone-layout-edit-btn" id="phone-layout-edit-btn">⊞ Edit Phone View</button>
-      <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
-      <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
+      <button class="nav-burger-btn" id="nav-burger-btn" aria-label="Toggle mobile menu">☰</button>
+      <div class="nav-actions" id="nav-actions">
+        <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
+        <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
+      </div>
     </div>
   </div>
 
@@ -2738,6 +2749,20 @@ document.getElementById('le-cancel-btn').addEventListener('click',closeLayoutEdi
 document.getElementById('le-reset-btn').addEventListener('click',resetLayoutToDefault);
 document.getElementById('layout-edit-btn').addEventListener('click',openLayoutEditor);
 document.getElementById('phone-layout-edit-btn').addEventListener('click',openPhoneLayoutEditor);
+document.getElementById('nav-burger-btn').addEventListener('click',e=>{
+  e.stopPropagation();
+  const headerRight = document.querySelector('.header-right');
+  if(headerRight) headerRight.classList.toggle('menu-open');
+});
+document.addEventListener('click',e=>{
+  const headerRight = document.querySelector('.header-right');
+  if(!headerRight) return;
+  if(!headerRight.contains(e.target)) headerRight.classList.remove('menu-open');
+});
+document.getElementById('nav-actions').addEventListener('click',()=>{
+  const headerRight = document.querySelector('.header-right');
+  if(headerRight) headerRight.classList.remove('menu-open');
+});
 document.getElementById('ple-save-btn').addEventListener('click',savePhoneLayout);
 document.getElementById('ple-cancel-btn').addEventListener('click',closePhoneLayoutEditor);
 document.getElementById('ple-reset-btn').addEventListener('click',resetPhoneLayout);
