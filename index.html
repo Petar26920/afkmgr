@@ -289,8 +289,39 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 #app:not(.admin-mode) #viewer-grid{gap:12px;}
 .viewer-panel{min-width:0;overflow:hidden;}
 
+.phone-current-timeline{display:none;}
+.phone-current-timeline .phone-timeline-header{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.phone-current-timeline .phone-timeline-title{font-size:12px;font-weight:700;color:var(--text);}
+.phone-current-timeline .phone-timeline-caption{font-size:11px;color:var(--muted);font-family:var(--mono);}
+.phone-current-timeline .phone-timeline-items{display:flex;flex-direction:column;gap:10px;}
+.phone-current-timeline .phone-timeline-item{display:flex;flex-direction:column;gap:10px;background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:14px;}
+.phone-current-timeline .phone-timeline-item-left{min-width:0;flex:1;}
+.phone-current-timeline .phone-timeline-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.phone-current-timeline .phone-timeline-summary{font-size:11px;color:var(--muted);line-height:1.4;font-family:var(--mono);margin-bottom:8px;}
+.phone-current-timeline .phone-timeline-agent-list{display:flex;flex-wrap:wrap;gap:6px;}
+.phone-current-timeline .phone-timeline-agent-pill{font-size:11px;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,0.06);color:var(--text);white-space:nowrap;}
+.phone-current-timeline .phone-timeline-more{background:rgba(61,158,255,0.15);color:var(--blue);border:none;cursor:pointer;}
+.phone-current-timeline .phone-timeline-more:hover{background:rgba(61,158,255,0.25);}
+.phone-current-timeline .phone-timeline-badge{font-size:11px;font-weight:700;padding:6px 10px;border-radius:999px;color:#000;white-space:nowrap;}
+.phone-current-timeline .phone-timeline-empty{display:flex;align-items:center;justify-content:center;height:70px;color:var(--muted);font-size:12px;font-family:var(--mono);text-align:center;}
+
+@media (max-width: 720px){
+  .main{padding:14px 16px;}
+  .metrics{grid-template-columns:1fr 1fr;gap:10px;}
+  .phone-current-timeline{display:block;}
+  .phone-current-timeline .card{padding:14px;}
+  .phone-current-timeline .phone-timeline-header{flex-direction:column;align-items:flex-start;}
+  .phone-current-timeline .phone-timeline-caption{margin-top:4px;}
+  .phone-current-timeline .phone-timeline-item{flex-direction:column;align-items:flex-start;}
+  .phone-current-timeline .phone-timeline-badge{width:100%;text-align:center;}
+  .phone-timeline-panel{display:none !important;}
+  #viewer-grid, .viewer-panel{display:none !important;}
+}
+
 #layout-editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:600;display:none;flex-direction:column;backdrop-filter:blur(6px);}
 #layout-editor-overlay.open{display:flex;}
+#phone-layout-editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:610;display:none;flex-direction:column;backdrop-filter:blur(6px);}
+#phone-layout-editor-overlay.open{display:flex;}
 .le-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border2);background:var(--surface);flex-shrink:0;}
 .le-title{font-size:15px;font-weight:800;display:flex;align-items:center;gap:10px;}
 .le-title-badge{font-size:9px;font-weight:700;font-family:var(--mono);background:var(--blue2);color:var(--blue);border:1px solid rgba(61,158,255,0.3);padding:3px 8px;border-radius:4px;letter-spacing:0.08em;}
@@ -353,6 +384,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .layout-edit-btn{display:none;font-size:11px;font-weight:600;padding:5px 12px;border-radius:5px;background:var(--purple2);border:1px solid rgba(181,122,255,0.3);color:var(--purple);cursor:pointer;font-family:var(--mono);transition:all 0.15s;letter-spacing:0.04em;white-space:nowrap;}
 .layout-edit-btn:hover{background:rgba(181,122,255,0.25);transform:translateY(-1px);}
 .admin-mode .layout-edit-btn{display:inline-flex;align-items:center;gap:5px;}
+.admin-mode .phone-layout-edit-btn{display:inline-flex;align-items:center;gap:5px;}
+
+.ple-sections{display:flex;flex-direction:column;gap:10px;}
+.ple-section-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border:1px solid var(--border2);border-radius:12px;background:var(--surface2);}
+.ple-section-label{font-size:13px;font-weight:700;color:var(--text);}
+.ple-section-actions{display:flex;align-items:center;gap:6px;}
+.ple-hidden-note{font-size:11px;color:var(--muted);font-family:var(--mono);margin-top:6px;}
 
 #custom-panel-modal .modal{width:480px;max-width:95vw;}
 .color-swatches{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
@@ -577,6 +615,32 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
+<!-- PHONE LAYOUT EDITOR -->
+<div id="phone-layout-editor-overlay">
+  <div class="le-header">
+    <div>
+      <div class="le-title"><span>⊞ Phone View Layout</span><span class="le-title-badge">ADMIN TOOL</span></div>
+      <div class="le-subtitle">Reorder and show/hide phone view sections.</div>
+    </div>
+    <div class="le-actions">
+      <button class="le-btn le-btn-cancel" id="ple-cancel-btn">✕ Close</button>
+      <button class="le-btn le-btn-reset" id="ple-reset-btn">↺ Reset defaults</button>
+      <button class="le-btn le-btn-save" id="ple-save-btn">💾 Save</button>
+    </div>
+  </div>
+  <div class="le-body">
+    <div class="le-hint">
+      <span class="le-hint-icon">💡</span>
+      <span>Use the buttons to reorder sections and control which snapshot blocks appear in phone view. Desktop panels remain hidden on phone — only the live snapshot is shown.</span>
+    </div>
+    <div id="ple-sections-container" class="ple-sections"></div>
+    <div style="margin-top:12px;">
+      <div class="le-picker-title">Available panels — click to add to phone view</div>
+      <div id="ple-panel-picker" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
 <!-- APP -->
 <div id="app">
   <div class="header">
@@ -593,6 +657,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="mode-badge viewer" id="mode-badge">VIEWER</div>
       <div class="mode-badge request-pip" id="request-pip" style="display:none;">0</div>
       <button class="layout-edit-btn" id="layout-edit-btn">⊞ Edit Layout</button>
+      <button class="layout-edit-btn phone-layout-edit-btn" id="phone-layout-edit-btn">⊞ Edit Phone View</button>
       <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
       <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
     </div>
@@ -605,6 +670,8 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       <div class="metric m-green"><div class="metric-label">On triage now</div><div class="metric-val sm green" id="m-triage">—</div><div class="metric-sub">handling queue</div></div>
       <div class="metric m-purple"><div class="metric-label">Patching agent</div><div class="metric-val sm purple" id="m-patch-val">—</div><div class="metric-sub" id="m-patch-week-sub">this week</div></div>
     </div>
+
+    <div class="phone-current-timeline" id="phone-current-timeline"></div>
 
     <!-- Admin-only management panels -->
     <div class="grid2 admin-only">
@@ -785,6 +852,14 @@ const DEFAULT_VIEWER_LAYOUT = [
   { panels:[{id:'shift-manager',span:12,visible:true}] },
 ];
 
+const DEFAULT_PHONE_LAYOUT = [
+  {id:'shift',label:'On shift now',visible:true},
+  {id:'coffee',label:'Coffee break',visible:true},
+  {id:'lunch',label:'Lunch break',visible:true},
+  {id:'triage',label:'Triage',visible:true},
+  {id:'custom',label:'Custom task',visible:true},
+];
+
 const DEFAULT_DATA = {
   agents:['Bogdan Repanovic','Danica Pecanac','Ivan Curcic','Sari Abboushi','Luka Martinovic','Aleksa Kostic','Bojan Pavlovic','Stefan Krstic','Luka Jovanovic','Milos Savic','Tamara Trakic','Milica Stepanovic','Dimitrije Milosavljevic','David Kostic','Isidora Stevanovic','Petar Spasic','Radislav Lazarevic'],
   agentBreakVisible:{},
@@ -819,6 +894,7 @@ const DEFAULT_DATA = {
   shiftAssignments: {},
   shiftManagerViewDate: null,
   viewerLayout: DEFAULT_VIEWER_LAYOUT,
+  phoneLayout: DEFAULT_PHONE_LAYOUT,
   customPanels: {},
   customTasks: [],
   editRequests: [],
@@ -829,6 +905,7 @@ const DEFAULT_DATA = {
 
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let activeModalType = 'coffee';
+const PHONE_TIMELINE_EXPANDED_SECTIONS = {};
 let _firestoreAvailable = true;
 let shiftManagerViewDate = null;
 
@@ -867,6 +944,7 @@ function normalizeData(d){
     customTasks:       Array.isArray(d.customTasks)       ? d.customTasks       : [],
     editRequests:      Array.isArray(d.editRequests)      ? d.editRequests      : [],
     topPerformers:     d.topPerformers && typeof d.topPerformers === 'object' ? d.topPerformers : {},
+    phoneLayout:       Array.isArray(d.phoneLayout) && d.phoneLayout.length ? d.phoneLayout : DEFAULT_PHONE_LAYOUT,
     lastUpdated:       d.lastUpdated ?? null,
     cardCollapse:      d.cardCollapse && typeof d.cardCollapse === 'object' ? d.cardCollapse : {},
   };
@@ -875,6 +953,8 @@ function normalizeData(d){
 function agentInBreaks(name){ const v=DATA.agentBreakVisible; return v&&name in v?v[name]:true; }
 function agentInSchedule(name){ const v=DATA.agentScheduleVisible; return v&&name in v?v[name]:true; }
 function getViewerLayout(){ return (DATA.viewerLayout&&DATA.viewerLayout.length)?DATA.viewerLayout:DEFAULT_VIEWER_LAYOUT; }
+function getPhoneLayout(){ return (DATA.phoneLayout&&DATA.phoneLayout.length)?DATA.phoneLayout:DEFAULT_PHONE_LAYOUT; }
+function isPhoneSectionVisible(section){ return section.visible !== false && section.visible !== 'false'; }
 
 function normalizeAgentKey(name){
   return String(name||'').normalize('NFD').replace(/[đĐ]/g,'dj').replace(/[\u0300-\u036f]/g,'').replace(/\./g,'').replace(/\s+/g,' ').trim().toLowerCase();
@@ -1120,7 +1200,7 @@ function buildTimelinePanel(heightPx){
     return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
-  return `<div class="card" style="height:100%;${hStyle}">
+  return `<div class="card phone-timeline-panel" style="height:100%;${hStyle}">
     <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Break timeline · 08:00 – 18:00</div></div>
     <div id="tl-wrap">${rows}</div>
     <div class="tl-times"><span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span><span>16:00</span><span>17:00</span><span>18:00</span></div>
@@ -1524,6 +1604,7 @@ function render(){
   renderCustomTasks();
   renderBreakRequests();
   renderMetrics();
+  renderPhoneTimeline();
   renderRequestPip();
   renderViewerGrid();
   renderLastUpdated();
@@ -1671,6 +1752,131 @@ function renderMetrics(){
   document.getElementById('m-triage').textContent=triN?triN.agent:'—';
   document.getElementById('m-patch-val').textContent=DATA.patchingAgent||'—';
   const ps=document.getElementById('m-patch-week-sub'); if(ps) ps.textContent=getCurrentPatchWeek();
+}
+
+function renderPhoneTimeline(){
+  const el=document.getElementById('phone-current-timeline'); if(!el) return;
+  const now = nowMins();
+  const fmtNow = fmtM(Math.round(now));
+  const activeCoffee = (Array.isArray(DATA.coffeeBreaks)?DATA.coffeeBreaks:[]).filter(b=>now>=b.start&&now<b.end);
+  const activeLunch  = (Array.isArray(DATA.lunchBreaks)?DATA.lunchBreaks:[]).filter(b=>now>=b.start&&now<b.end);
+  const activeTriage = (Array.isArray(DATA.triageSlots)?DATA.triageSlots:[]).filter(t=>now>=t.start&&now<t.end);
+  const activeCustom = (Array.isArray(DATA.customTasks)?DATA.customTasks:[]).filter(t=>now>=t.start&&now<t.end);
+
+  const isTimeInShift = (time, shift) => {
+    if(shift.end > 1440) return time >= shift.start || time < (shift.end - 1440);
+    return time >= shift.start && time < shift.end;
+  };
+
+  const todayKey = formatDateKey(new Date());
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = formatDateKey(yesterday);
+  const shiftEntries = Object.entries(DATA.shiftAssignments || {}).filter(([key]) => key.startsWith(todayKey + ':') || key.startsWith(yesterdayKey + ':'));
+  const usedShiftIds = new Set();
+  const activeShiftBlocks = shiftEntries.map(([key,value]) => {
+    const parts = key.split(':');
+    if(parts.length < 2) return null;
+    const shiftId = parts[1];
+    if(usedShiftIds.has(shiftId)) return null;
+    const shift = SHIFTS.weekday.concat(SHIFTS.weekend).find(s=>s.id===shiftId);
+    if(!shift) return null;
+    if(!isTimeInShift(now, shift)) return null;
+    const assigned = parseShiftAgents(value).filter(a=>agentInSchedule(a));
+    if(!assigned.length) return null;
+    usedShiftIds.add(shiftId);
+    return { id: shiftId, assigned, label: getShiftLabel(shiftId), start: shift.start, end: shift.end };
+  }).filter(Boolean).sort((a,b)=>a.start - b.start);
+
+  const renderAgentPills = (names, sectionKey) => {
+    if(!names || !names.length) return '';
+    const expanded = sectionKey && PHONE_TIMELINE_EXPANDED_SECTIONS[sectionKey];
+    const shownNames = expanded ? names : names.slice(0, 4);
+    const extraCount = names.length - shownNames.length;
+    const pills = shownNames.map(name => `<span class="phone-timeline-agent-pill">${name}</span>`).join('');
+    const moreBtn = (!expanded && extraCount > 0 && sectionKey)
+      ? `<button type="button" class="phone-timeline-agent-pill phone-timeline-more" data-action="expand-phone-section" data-section="${sectionKey}">+${extraCount} more</button>`
+      : '';
+    return `<div class="phone-timeline-agent-list">${pills}${moreBtn}</div>`;
+  };
+
+  const shiftSummary = activeShiftBlocks.length ? (() => {
+    const allAgents = [...new Set(activeShiftBlocks.flatMap(block => block.assigned))];
+    const periods = activeShiftBlocks.map(block => block.label).join(' · ');
+    return `<div class="phone-timeline-item">
+      <div class="phone-timeline-item-left">
+        <div class="phone-timeline-label">🟢 On shift now</div>
+        <div class="phone-timeline-summary">${allAgents.length} assigned · ${periods}</div>
+        ${renderAgentPills(allAgents, 'shift')}
+      </div>
+      <div class="phone-timeline-badge" style="background:rgba(0,212,212,0.15);">${allAgents.length} on shift</div>
+    </div>`;
+  })() : `<div class="phone-timeline-item">
+      <div class="phone-timeline-item-left">
+        <div class="phone-timeline-label">🟢 On shift now</div>
+        <div class="phone-timeline-summary">No active shifts at the moment</div>
+      </div>
+      <div class="phone-timeline-badge" style="background:rgba(0,212,212,0.15);">0 on shift</div>
+    </div>`;
+
+  const sectionsMap = {
+    shift: shiftSummary,
+    coffee: null,
+    lunch: null,
+    triage: null,
+    custom: null,
+  };
+  const makeSummary = (items, label, icon, color, sectionKey) => {
+    if(!items.length) return null;
+    const names = items.map(item=>shortName(item.agent||item.title||'')).filter(Boolean);
+    const range = items.length===1 ? `${fmtM(items[0].start)}–${fmtM(items[0].end)}` : `${fmtM(Math.min(...items.map(i=>i.start)))}–${fmtM(Math.max(...items.map(i=>i.end)))}`;
+    return `<div class="phone-timeline-item">
+      <div class="phone-timeline-item-left">
+        <div class="phone-timeline-label">${icon} ${label}</div>
+        <div class="phone-timeline-summary">${names.length ? `${names.length} active · ${range}` : `Live now · ${range}`}</div>
+        ${renderAgentPills(names, sectionKey)}
+      </div>
+      <div class="phone-timeline-badge" style="background:${color};">${items.length} now</div>
+    </div>`;
+  };
+
+  const coffeeSection = makeSummary(activeCoffee, 'Coffee break', '☕', 'rgba(255,179,64,0.15)', 'coffee');
+  const lunchSection  = makeSummary(activeLunch, 'Lunch break', '🍕', 'rgba(0,229,160,0.15)', 'lunch');
+  const triageSection = activeTriage.length ? `<div class="phone-timeline-item">
+      <div class="phone-timeline-item-left">
+        <div class="phone-timeline-label">🔀 Triage</div>
+        <div class="phone-timeline-summary">${activeTriage.length} active · ${fmtM(activeTriage[0].start)}–${fmtM(activeTriage[0].end)}</div>
+        ${renderAgentPills(activeTriage.map(t=>t.agent), 'triage')}
+      </div>
+      <div class="phone-timeline-badge" style="background:rgba(0,212,212,0.15);">${activeTriage.length} now</div>
+    </div>` : `<div class="phone-timeline-item">
+      <div class="phone-timeline-item-left">
+        <div class="phone-timeline-label">🔀 Triage</div>
+        <div class="phone-timeline-summary">No active triage coverage right now</div>
+      </div>
+      <div class="phone-timeline-badge" style="background:rgba(0,212,212,0.15);">0 now</div>
+    </div>`;
+  const customSection = makeSummary(activeCustom, 'Custom task', '✳️', 'rgba(181,122,255,0.15)', 'custom');
+
+  sectionsMap.coffee = coffeeSection;
+  sectionsMap.lunch = lunchSection;
+  sectionsMap.triage = triageSection;
+  sectionsMap.custom = customSection;
+
+  const sections = [];
+  getPhoneLayout().forEach(cfg => {
+    if(!isPhoneSectionVisible(cfg)) return;
+    const section = sectionsMap[cfg.id];
+    if(section) sections.push(section);
+  });
+
+  const content = sections.length ? sections.join('') : '<div class="phone-timeline-empty">No live timeline items right now. Check back in a moment.</div>';
+  el.innerHTML = `<div class="card phone-current-timeline-card">
+    <div class="card-header phone-timeline-header">
+      <div><div class="phone-timeline-title">Live snapshot</div><div class="phone-timeline-caption">Now · ${fmtNow}</div></div>
+      <div class="phone-timeline-badge" style="background:rgba(255,79,79,0.15);color:var(--red);">Live</div>
+    </div>
+    <div class="phone-timeline-items">${content}</div>
+  </div>`;
 }
 
 function populateAgentSelect(){
@@ -2139,6 +2345,7 @@ document.getElementById('viewer-grid').addEventListener('mouseleave', ()=>{
 // ════════════════════════════════════════════════
 let leLayout=[];
 let leDragSrc=null;
+let pleLayout=[];
 const HEIGHT_STEP=40, HEIGHT_MIN=80, HEIGHT_MAX=600;
 
 function openLayoutEditor(){
@@ -2161,6 +2368,13 @@ function getPanelLabel(panelId){
     return cp?cp.title:'Custom';
   }
   return BUILTIN_PANELS.find(p=>p.id===panelId)?.label||panelId;
+}
+function getPhoneSectionLabel(sectionId){
+  const section = DEFAULT_PHONE_LAYOUT.find(p=>p.id===sectionId);
+  if(section) return section.label;
+  const builtin = BUILTIN_PANELS.find(p=>p.id===sectionId);
+  if(builtin) return builtin.label;
+  return sectionId;
 }
 function getPanelIcon(panelId){
   if(panelId.startsWith('custom:')) return '📝';
@@ -2229,6 +2443,72 @@ function renderLayoutEditor(){
     container.appendChild(rowWrap);
   });
   renderPanelPicker();
+}
+
+function openPhoneLayoutEditor(){
+  try{requireAdmin();}catch(e){return;}
+  pleLayout = JSON.parse(JSON.stringify(getPhoneLayout()));
+  renderPhoneLayoutEditor();
+  document.getElementById('phone-layout-editor-overlay').classList.add('open');
+}
+function closePhoneLayoutEditor(){ document.getElementById('phone-layout-editor-overlay').classList.remove('open'); }
+function savePhoneLayout(){
+  try{requireAdmin();}catch(e){return;}
+  DATA.phoneLayout = JSON.parse(JSON.stringify(pleLayout.map(section => ({
+    id: section.id,
+    visible: isPhoneSectionVisible(section),
+  }))));
+  closePhoneLayoutEditor();
+  render();
+  saveData();
+}
+function resetPhoneLayout(){
+  pleLayout = JSON.parse(JSON.stringify(DEFAULT_PHONE_LAYOUT));
+  renderPhoneLayoutEditor();
+}
+function renderPhoneLayoutEditor(){
+  const container = document.getElementById('ple-sections-container');
+  container.innerHTML = '';
+  pleLayout.forEach((section, idx) => {
+    const visible = isPhoneSectionVisible(section);
+    const row = document.createElement('div');
+    row.className = 'ple-section-row';
+    row.dataset.idx = idx;
+    row.innerHTML = `
+      <div class="ple-section-label">${getPhoneSectionLabel(section.id)}</div>
+      <div class="ple-section-actions">
+        <button class="le-span-btn" data-ple-action="move-up" data-idx="${idx}" title="Move up">↑</button>
+        <button class="le-span-btn" data-ple-action="move-down" data-idx="${idx}" title="Move down">↓</button>
+        <button class="le-span-btn" data-ple-action="toggle-visible" data-idx="${idx}" title="Toggle visibility">${visible ? '👁' : '🙈'}</button>
+        <button class="le-span-btn" data-ple-action="remove" data-idx="${idx}" title="Remove from phone">✖</button>
+      </div>
+    `;
+    if(!visible){
+      const hiddenNote = document.createElement('div');
+      hiddenNote.className = 'ple-hidden-note';
+      hiddenNote.textContent = 'Hidden in phone view';
+      row.appendChild(hiddenNote);
+    }
+    container.appendChild(row);
+  });
+
+  // Available phone snapshot sections picker
+  const usedIds = new Set(pleLayout.map(p=>p.id));
+  const picker = document.getElementById('ple-panel-picker');
+  picker.innerHTML = '';
+  const available = DEFAULT_PHONE_LAYOUT.filter(p=>!usedIds.has(p.id));
+  if(available.length){
+    available.forEach(p=>{
+      const btn = document.createElement('button');
+      btn.className = 'ple-add-panel-btn';
+      btn.dataset.pleAction = 'add-panel';
+      btn.dataset.panelId = p.id;
+      btn.innerHTML = `${getPhoneSectionLabel(p.id)}`;
+      picker.appendChild(btn);
+    });
+  } else {
+    picker.innerHTML = '<div style="color:var(--muted);font-size:12px">No additional snapshot sections available</div>';
+  }
 }
 
 function getDropColumnForRow(rowEl,e){
@@ -2457,6 +2737,41 @@ document.getElementById('le-save-btn').addEventListener('click',saveLayout);
 document.getElementById('le-cancel-btn').addEventListener('click',closeLayoutEditor);
 document.getElementById('le-reset-btn').addEventListener('click',resetLayoutToDefault);
 document.getElementById('layout-edit-btn').addEventListener('click',openLayoutEditor);
+document.getElementById('phone-layout-edit-btn').addEventListener('click',openPhoneLayoutEditor);
+document.getElementById('ple-save-btn').addEventListener('click',savePhoneLayout);
+document.getElementById('ple-cancel-btn').addEventListener('click',closePhoneLayoutEditor);
+document.getElementById('ple-reset-btn').addEventListener('click',resetPhoneLayout);
+document.getElementById('ple-sections-container').addEventListener('click',e=>{
+  const btn = e.target.closest('[data-ple-action]'); if(!btn) return;
+  const idx = parseInt(btn.dataset.idx,10);
+  if(Number.isNaN(idx)) return;
+  const act = btn.dataset.pleAction;
+  if(act==='move-up' && idx>0){
+    [pleLayout[idx-1],pleLayout[idx]]=[pleLayout[idx],pleLayout[idx-1]];
+    renderPhoneLayoutEditor();
+  } else if(act==='move-down' && idx < pleLayout.length-1){
+    [pleLayout[idx],pleLayout[idx+1]]=[pleLayout[idx+1],pleLayout[idx]];
+    renderPhoneLayoutEditor();
+  } else if(act==='toggle-visible'){
+    pleLayout[idx].visible = isPhoneSectionVisible(pleLayout[idx]) ? false : true;
+    renderPhoneLayoutEditor();
+  } else if(act==='remove'){
+    pleLayout.splice(idx,1);
+    renderPhoneLayoutEditor();
+  }
+});
+
+// handle add-panel buttons in picker
+document.getElementById('ple-panel-picker').addEventListener('click',e=>{
+  const btn = e.target.closest('[data-ple-action]'); if(!btn) return;
+  const act = btn.dataset.pleAction;
+  if(act==='add-panel'){
+    const panelId = btn.dataset.panelId;
+    if(!panelId) return;
+    pleLayout.push({id:panelId,visible:true});
+    renderPhoneLayoutEditor();
+  }
+});
 
 // ─── CUSTOM PANEL MODAL WIRING ───
 document.getElementById('cp-cancel-btn').addEventListener('click',()=>{
@@ -2611,6 +2926,7 @@ document.getElementById('app').addEventListener('click',e=>{
   }else if(act==='leave-delete'){try{requireAdmin();}catch(e){return;}DATA.onLeave.splice(idx,1);render();saveData();
   }else if(act==='agent-pw-toggle'){const wrap=el.closest('.agent-pw-wrap');const inp=wrap.querySelector('.agent-pw-input');inp.type=inp.type==='password'?'text':'password';el.textContent=inp.type==='password'?'👁':'🙈';
   }else if(act==='tp-delete'){try{requireAdmin();}catch(e){return;}const date=el.dataset.date;if(DATA.topPerformers&&DATA.topPerformers[date]){delete DATA.topPerformers[date];renderTopPerformers();renderViewerGrid();saveData();}
+  }else if(act==='expand-phone-section'){const section=el.dataset.section;if(section){PHONE_TIMELINE_EXPANDED_SECTIONS[section]=!PHONE_TIMELINE_EXPANDED_SECTIONS[section];render();}
   }else if(act==='open-shift-import'){openShiftImportModal();
   }else if(act==='shift-prev-day'){const d=new Date(shiftManagerViewDate||new Date());d.setDate(d.getDate()-1);setShiftManagerViewDate(formatDateKey(d));render();
   }else if(act==='shift-next-day'){const d=new Date(shiftManagerViewDate||new Date());d.setDate(d.getDate()+1);setShiftManagerViewDate(formatDateKey(d));render();
