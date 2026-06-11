@@ -303,7 +303,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .phone-current-timeline .phone-timeline-label{font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;}
 .phone-current-timeline .phone-timeline-summary{font-size:11px;color:var(--muted);line-height:1.4;font-family:var(--mono);margin-bottom:8px;}
 .phone-current-timeline .phone-timeline-agent-list{display:flex;flex-wrap:wrap;gap:6px;}
-.phone-current-timeline .phone-timeline-agent-pill{font-size:11px;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,0.06);color:var(--text);white-space:nowrap;}
+.phone-current-timeline .phone-timeline-agent-pill{position:relative;overflow:hidden;font-size:11px;padding:5px 8px;border-radius:999px;background:rgba(255,255,255,0.06);color:var(--text);white-space:nowrap;}
+.phone-current-timeline .phone-timeline-agent-pill.progress{background:rgba(255,255,255,0.06);}
+.phone-current-timeline .phone-timeline-agent-pill .phone-timeline-agent-pill-fill{position:absolute;left:0;top:0;height:100%;background:rgba(61,158,255,0.16);pointer-events:none;}
+.phone-current-timeline .phone-timeline-agent-pill .phone-timeline-agent-pill-text{position:relative;z-index:1;}
+.phone-current-timeline .phone-timeline-agent-pill.progress.warning .phone-timeline-agent-pill-fill{background:rgba(255,79,79,0.18);}
+.phone-current-timeline .phone-timeline-agent-pill.progress.warning .phone-timeline-agent-pill-text{color:var(--red);font-weight:700;}
+.phone-current-timeline .phone-timeline-agent-pill.warning{background:rgba(255,79,79,0.18);color:var(--red);border:1px solid rgba(255,79,79,0.25);font-weight:700;}
 .phone-current-timeline .phone-timeline-more{background:rgba(61,158,255,0.15);color:var(--blue);border:none;cursor:pointer;}
 .phone-current-timeline .phone-timeline-more:hover{background:rgba(61,158,255,0.25);}
 .phone-current-timeline .phone-timeline-badge{font-size:11px;font-weight:700;padding:6px 10px;border-radius:999px;color:#000;white-space:nowrap;}
@@ -1798,12 +1804,51 @@ function renderPhoneTimeline(){
     return { id: shiftId, assigned, label: getShiftLabel(shiftId), start: shift.start, end: shift.end };
   }).filter(Boolean).sort((a,b)=>a.start - b.start);
 
+  const breakAgentKeys = new Set([
+    ...activeCoffee.map(item => normalizeAgentKey(item.agent)),
+    ...activeLunch.map(item => normalizeAgentKey(item.agent))
+  ].filter(Boolean));
+  const shiftAgentKeys = new Set(activeShiftBlocks.flatMap(block => block.assigned.map(a => normalizeAgentKey(a))));
+  const shiftBreakKeys = new Set([...breakAgentKeys].filter(key => shiftAgentKeys.has(key)));
+  const shiftProgressMap = {};
+  activeShiftBlocks.forEach(block => {
+    const duration = block.end > block.start ? block.end - block.start : block.end + 1440 - block.start;
+    const elapsed = block.end > block.start
+      ? Math.max(0, Math.min(duration, now - block.start))
+      : now >= block.start ? now - block.start : now + 1440 - block.start;
+    const progress = duration > 0 ? Math.max(0, Math.min(1, elapsed / duration)) : 0;
+    block.assigned.forEach(agent => {
+      shiftProgressMap[normalizeAgentKey(agent)] = progress;
+    });
+  });
+
+  const breakProgressMap = {};
+  [...activeCoffee, ...activeLunch].forEach(item => {
+    const duration = item.end > item.start ? item.end - item.start : item.end + 1440 - item.start;
+    const elapsed = item.end > item.start
+      ? Math.max(0, Math.min(duration, now - item.start))
+      : now >= item.start ? now - item.start : now + 1440 - item.start;
+    const progress = duration > 0 ? Math.max(0, Math.min(1, elapsed / duration)) : 0;
+    breakProgressMap[normalizeAgentKey(item.agent)] = progress;
+  });
+
   const renderAgentPills = (names, sectionKey) => {
     if(!names || !names.length) return '';
     const expanded = sectionKey && PHONE_TIMELINE_EXPANDED_SECTIONS[sectionKey];
     const shownNames = expanded ? names : names.slice(0, 4);
     const extraCount = names.length - shownNames.length;
-    const pills = shownNames.map(name => `<span class="phone-timeline-agent-pill">${name}</span>`).join('');
+    const pills = shownNames.map(entry => {
+      const label = typeof entry === 'string' ? entry : entry.label;
+      const key = typeof entry === 'string' ? normalizeAgentKey(entry) : entry.key || normalizeAgentKey(entry.label);
+      const warn = sectionKey === 'shift' && shiftBreakKeys.has(key);
+      const progress = sectionKey === 'shift'
+        ? (shiftBreakKeys.has(key) ? (breakProgressMap[key] ?? shiftProgressMap[key] ?? null) : (shiftProgressMap[key] ?? null))
+        : (sectionKey === 'coffee' || sectionKey === 'lunch')
+          ? (breakProgressMap[key] ?? null)
+          : null;
+      const fill = progress !== null ? `<span class="phone-timeline-agent-pill-fill" style="width:${Math.round(progress * 100)}%"></span>` : '';
+      return `<span class="phone-timeline-agent-pill${warn ? ' warning' : ''}${progress !== null ? ' progress' : ''}">${fill}<span class="phone-timeline-agent-pill-text">${label}</span></span>`;
+    }).join('');
     const moreBtn = (!expanded && extraCount > 0 && sectionKey)
       ? `<button type="button" class="phone-timeline-agent-pill phone-timeline-more" data-action="expand-phone-section" data-section="${sectionKey}">+${extraCount} more</button>`
       : '';
@@ -1838,7 +1883,10 @@ function renderPhoneTimeline(){
   };
   const makeSummary = (items, label, icon, color, sectionKey) => {
     if(!items.length) return null;
-    const names = items.map(item=>shortName(item.agent||item.title||'')).filter(Boolean);
+    const names = items.map(item => {
+      const labelText = shortName(item.agent||item.title||'');
+      return labelText ? { label: labelText, key: normalizeAgentKey(item.agent||item.title||'') } : null;
+    }).filter(Boolean);
     const range = items.length===1 ? `${fmtM(items[0].start)}–${fmtM(items[0].end)}` : `${fmtM(Math.min(...items.map(i=>i.start)))}–${fmtM(Math.max(...items.map(i=>i.end)))}`;
     return `<div class="phone-timeline-item">
       <div class="phone-timeline-item-left">
