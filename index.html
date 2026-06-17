@@ -45,7 +45,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 .header-title{font-size:17px;font-weight:800;letter-spacing:-0.01em;}
 .header-title span{color:var(--muted);font-weight:400;font-size:13px;margin-left:4px;}
 .header-right{display:flex;align-items:center;gap:10px;position:relative;}
-.nav-burger-btn{display:none;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:10px;background:var(--surface2);color:var(--text);font-size:18px;cursor:pointer;transition:all 0.2s;}
+.nav-burger-btn{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border:none;border-radius:10px;background:var(--surface2);color:var(--text);font-size:18px;cursor:pointer;transition:all 0.2s;}
 .nav-burger-btn:hover{background:var(--surface3);transform:translateY(-1px);}
 .nav-actions{display:flex;align-items:center;gap:10px;}
 .nav-actions button{white-space:nowrap;}
@@ -327,7 +327,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   .phone-timeline-panel{display:none !important;}
   #viewer-grid, .viewer-panel{display:none !important;}
   .nav-burger-btn{display:inline-flex;}
-  .nav-actions{display:none;position:absolute;right:0;top:100%;background:var(--surface);border:1px solid var(--border2);border-radius:16px;box-shadow:0 18px 36px rgba(0,0,0,0.25);padding:10px;flex-direction:column;align-items:flex-end;width:calc(100vw - 40px);max-width:220px;z-index:200;}
+  .nav-actions{display:none;position:absolute;right:0;top:100%;background:var(--surface);border:1px solid var(--border2);border-radius:16px;box-shadow:0 18px 36px rgba(0,0,0,0.25);padding:10px;flex-direction:column;align-items:flex-end;width:min(260px,calc(100vw - 40px));max-width:260px;z-index:200;}
   .header-right.menu-open .nav-actions{display:flex;}
   .nav-actions button{width:100%;text-align:left;}
 }
@@ -670,10 +670,10 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
       </div>
       <div class="mode-badge viewer" id="mode-badge">VIEWER</div>
       <div class="mode-badge request-pip" id="request-pip" style="display:none;">0</div>
-      <button class="layout-edit-btn" id="layout-edit-btn">⊞ Edit Layout</button>
-      <button class="layout-edit-btn phone-layout-edit-btn" id="phone-layout-edit-btn">⊞ Edit Phone View</button>
       <button class="nav-burger-btn" id="nav-burger-btn" aria-label="Toggle mobile menu">☰</button>
       <div class="nav-actions" id="nav-actions">
+        <button class="layout-edit-btn" id="layout-edit-btn">⊞ Edit Layout</button>
+        <button class="layout-edit-btn phone-layout-edit-btn" id="phone-layout-edit-btn">⊞ Edit Phone View</button>
         <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
         <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
       </div>
@@ -682,7 +682,7 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
 
   <div class="main">
     <div class="metrics">
-      <div class="metric m-blue"><div class="metric-label">Active today</div><div class="metric-val blue" id="m-total">0</div><div class="metric-sub">members</div></div>
+      <div class="metric m-blue"><div class="metric-label">Current active</div><div class="metric-val blue" id="m-total">0</div><div class="metric-sub">members</div></div>
       <div class="metric m-amber"><div class="metric-label">Currently AFK</div><div class="metric-val amber" id="m-afk">0</div><div class="metric-sub" id="m-afk-sub">on break</div></div>
       <div class="metric m-green"><div class="metric-label">On triage now</div><div class="metric-val sm green" id="m-triage">—</div><div class="metric-sub">handling queue</div></div>
       <div class="metric m-purple"><div class="metric-label">Patching agent</div><div class="metric-val sm purple" id="m-patch-val">—</div><div class="metric-sub" id="m-patch-week-sub">this week</div></div>
@@ -1106,6 +1106,31 @@ async function saveAgentBreak(){
     if(errEl) errEl.textContent='⚠ Could not save break: '+e.message;
     DATA.coffeeBreaks.pop();
     render();
+  }
+}
+
+// ─── LUNCH BREAK SAVE (only writes lunchBreaks field) ───
+async function saveLunchBreak(){
+  if(!_firestoreAvailable) return;
+  try {
+    await updateDoc(DOC_REF, { lunchBreaks: DATA.lunchBreaks });
+  } catch(e){
+    console.error('Lunch break save failed:', e);
+  }
+}
+
+// ─── EDIT REQUEST SAVE (only writes editRequests field) ───
+async function saveEditRequests(){
+  const errEl = document.getElementById('br-err');
+  if(!_firestoreAvailable){
+    if(errEl) errEl.textContent='⚠ Offline — request was not saved.';
+    return;
+  }
+  try {
+    await updateDoc(DOC_REF, { editRequests: DATA.editRequests });
+  } catch(e){
+    console.error('Edit request save failed:', e);
+    if(errEl) errEl.textContent='⚠ Could not save request: '+e.message;
   }
 }
 
@@ -1761,9 +1786,37 @@ function renderLeaveList(){
 function renderMetrics(){
   const now=nowMins();
   const afk=[...new Set([...DATA.coffeeBreaks,...DATA.lunchBreaks].filter(b=>now>=b.start&&now<b.end).map(b=>b.agent))];
-  const activeToday=new Set([...DATA.coffeeBreaks.map(b=>b.agent),...DATA.lunchBreaks.map(b=>b.agent)]);
+  
+  // Calculate agents currently on shift
+  const isTimeInShift=(time,shift)=>{
+    if(shift.end>1440) return time>=shift.start||time<(shift.end-1440);
+    return time>=shift.start&&time<shift.end;
+  };
+  const todayKey=formatDateKey(new Date());
+  const yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yesterdayKey=formatDateKey(yesterday);
+  const shiftEntries=Object.entries(DATA.shiftAssignments||{}).filter(([key])=>key.startsWith(todayKey+':')||key.startsWith(yesterdayKey+':'));
+  const usedShiftIds=new Set();
+  const onShiftAgents=new Set();
+  shiftEntries.forEach(([key,value])=>{
+    const parts=key.split(':');
+    if(parts.length<2) return;
+    const shiftId=parts[1];
+    if(usedShiftIds.has(shiftId)) return;
+    const shift=SHIFTS.weekday.concat(SHIFTS.weekend).find(s=>s.id===shiftId);
+    if(!shift) return;
+    if(!isTimeInShift(now,shift)) return;
+    const assigned=parseShiftAgents(value).filter(a=>agentInSchedule(a));
+    if(!assigned.length) return;
+    usedShiftIds.add(shiftId);
+    assigned.forEach(agent=>onShiftAgents.add(agent));
+  });
+  
+  // Calculate available agents: on shift - currently on break
+  const availableAgents=new Set([...onShiftAgents].filter(agent=>!afk.includes(agent)));
+  
   const triN=DATA.triageSlots.find(t=>now>=t.start&&now<t.end);
-  document.getElementById('m-total').textContent=activeToday.size;
+  document.getElementById('m-total').textContent=availableAgents.size;
   document.getElementById('m-afk').textContent=afk.length;
   document.getElementById('m-afk-sub').textContent=afk.length?afk.slice(0,5).map(n=>n.split(' ')[0]).join(', '):'none right now';
   document.getElementById('m-triage').textContent=triN?triN.agent:'—';
@@ -2369,7 +2422,7 @@ function confirmBreakRequest(){
     status:'pending',
     createdAt:new Date().toISOString()
   });
-  closeBreakRequestModal(); render(); saveData();
+  closeBreakRequestModal(); render(); saveEditRequests();
 }
 
 // ─── CLOCK ───
@@ -2907,10 +2960,13 @@ document.getElementById('break-requests-list').addEventListener('click',e=>{
     const bidx = breaks.findIndex(b=>b.agent===req.agent&&b.start===req.originalStart&&b.end===req.originalEnd);
     if(bidx>=0){ breaks[bidx].start=req.requestedStart; breaks[bidx].end=req.requestedEnd; }
     DATA.editRequests.splice(idx,1);
-    render(); saveData();
+    render(); 
+    saveEditRequests();
+    if(req.type==='coffee') saveAgentBreak();
+    else saveLunchBreak();
   } else if(action==='request-decline'){
     DATA.editRequests.splice(idx,1);
-    render(); saveData();
+    render(); saveEditRequests();
   }
 });
 document.getElementById('modal-cancel-btn').addEventListener('click',closeModal);
