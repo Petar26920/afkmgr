@@ -601,6 +601,40 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
   </div>
 </div>
 
+<!-- DELETE TIMELINE CONFIRMATION MODAL -->
+<div class="modal-overlay" id="delete-timeline-modal">
+  <div class="modal" style="width:420px;max-width:95vw;">
+    <h2>🗑 Delete saved timeline?</h2>
+    <p id="delete-timeline-msg" style="margin:12px 0;font-size:14px;color:var(--muted);"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="delete-timeline-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="delete-timeline-confirm-btn" style="background:var(--red);">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE HISTORY MODAL -->
+<div class="modal-overlay" id="timeline-history-modal">
+  <div class="modal" style="width:920px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-shrink:0;">
+      <div>
+        <h2>🗂 Saved timeline history</h2>
+        <p style="margin:8px 0 0;font-size:12px;color:var(--muted);max-width:620px;">Select a saved date to preview the timeline and see the timeline layout in the same window.</p>
+      </div>
+      <button class="modal-cancel" id="timeline-history-close-btn" style="padding:8px 14px;">Close</button>
+    </div>
+    <div style="display:flex;gap:16px;flex:1;min-height:0;overflow:hidden;">
+      <div style="flex:0 0 340px;min-width:280px;max-height:100%;overflow:auto;display:flex;flex-direction:column;">
+        <div id="timeline-history-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+      <div style="flex:1 1 520px;min-width:280px;display:flex;flex-direction:column;gap:14px;overflow:hidden;min-height:0;">
+        <div id="timeline-history-preview" style="background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:16px;overflow:auto;flex-shrink:0;max-height:180px;"></div>
+        <div id="timeline-history-timeline" style="flex:1;overflow:auto;min-height:0;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- LAYOUT EDITOR -->
 <div id="layout-editor-overlay">
   <div class="le-header">
@@ -717,6 +751,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
         <div id="break-requests-list"></div>
       </div>
       <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Saved timeline history</div><button class="card-collapse-btn" data-collapse="timeline-history-card" title="Toggle">▶</button></div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-size:13px;color:var(--text);">Open the timeline history window to preview past saved dates and see the timeline layout.</div>
+          <button class="add-btn" id="open-timeline-history-btn">🗂 View saved timelines</button>
+        </div>
+      </div>
+      <div class="card">
         <div class="card-header"><div class="card-title"><span class="pip pip-teal"></span>Custom tasks</div><div style="display:flex;gap:6px;"><button class="add-btn" id="add-task-card-btn">+ Add</button><button class="card-collapse-btn" data-collapse="custom-tasks-card" title="Toggle">▶</button></div></div>
         <div id="custom-tasks-list"></div>
       </div>
@@ -804,9 +845,13 @@ body::before{content:'';position:fixed;inset:0;background-image:url("data:image/
     <!-- VIEWER LAYOUT GRID -->
     <div id="viewer-grid"></div>
 
-    <div class="bottom-bar admin-only">
+    <div class="bottom-bar admin-only" style="gap:10px;">
       <span id="last-update">Live · updates every 30s</span>
-      <button class="save-btn" id="save-btn">💾 Save changes</button>
+      <div style="display:flex;gap:8px;">
+        <button class="save-btn" id="save-btn">💾 Save changes</button>
+        <button class="save-btn" id="archive-timeline-btn">📦 Archive timeline</button>
+        <button class="save-btn" id="save-timeline-btn">🗓 Save & clear timeline</button>
+      </div>
     </div>
   </div>
 </div>
@@ -916,6 +961,7 @@ const DEFAULT_DATA = {
   customTasks: [],
   editRequests: [],
   topPerformers: {},
+  dailyTimelines: {},
   lastUpdated: null,
   cardCollapse: {},
 };
@@ -925,6 +971,7 @@ let activeModalType = 'coffee';
 const PHONE_TIMELINE_EXPANDED_SECTIONS = {};
 let _firestoreAvailable = true;
 let shiftManagerViewDate = null;
+let selectedDailyTimelineKey = null;
 
 function loadShiftManagerViewDate(){
   try{
@@ -961,6 +1008,7 @@ function normalizeData(d){
     customTasks:       Array.isArray(d.customTasks)       ? d.customTasks       : [],
     editRequests:      Array.isArray(d.editRequests)      ? d.editRequests      : [],
     topPerformers:     d.topPerformers && typeof d.topPerformers === 'object' ? d.topPerformers : {},
+    dailyTimelines:    d.dailyTimelines && typeof d.dailyTimelines === 'object' ? d.dailyTimelines : {},
     phoneLayout:       Array.isArray(d.phoneLayout) && d.phoneLayout.length ? d.phoneLayout : DEFAULT_PHONE_LAYOUT,
     lastUpdated:       d.lastUpdated ?? null,
     cardCollapse:      d.cardCollapse && typeof d.cardCollapse === 'object' ? d.cardCollapse : {},
@@ -1092,6 +1140,80 @@ async function saveData(){
   }
 }
 
+function createTimelineArchiveKey(){
+  const dateKey = formatDateKey(new Date());
+  const randomId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2,10);
+  return `${dateKey}_${Date.now()}_${randomId}`;
+}
+
+async function archiveCurrentTimeline(){
+  const el = document.getElementById('last-update');
+  if(!_firestoreAvailable){ if(el) el.textContent='⚠ Offline — timeline not archived'; return; }
+  const dateKey = formatDateKey(new Date());
+  const archiveKey = createTimelineArchiveKey();
+  if(!DATA.dailyTimelines) DATA.dailyTimelines = {};
+  DATA.dailyTimelines[archiveKey] = {
+    date: dateKey,
+    savedAt: new Date().toISOString(),
+    timeline: {
+      coffeeBreaks: JSON.parse(JSON.stringify(DATA.coffeeBreaks || [])),
+      lunchBreaks: JSON.parse(JSON.stringify(DATA.lunchBreaks || [])),
+      triageSlots: JSON.parse(JSON.stringify(DATA.triageSlots || [])),
+      customTasks: JSON.parse(JSON.stringify(DATA.customTasks || [])),
+      onLeave: JSON.parse(JSON.stringify(DATA.onLeave || [])),
+      shiftManagerViewDate: shiftManagerViewDate || dateKey
+    }
+  };
+  DATA.lastUpdated = new Date().toISOString();
+  try {
+    await setDoc(DOC_REF, DATA);
+    if(el) el.textContent = `Archived timeline for ${dateKey}`;
+    render();
+    renderLastUpdated();
+    setTimeout(setStatusBar, 3000);
+  } catch(e){
+    if(el) el.textContent='⚠ Timeline archive failed: '+e.message;
+    console.error('Firestore archive error:', e);
+  }
+}
+
+async function saveDailyTimeline(){
+  const el = document.getElementById('last-update');
+  if(!_firestoreAvailable){ if(el) el.textContent='⚠ Offline — timeline not saved'; return; }
+  const dateKey = formatDateKey(new Date());
+  const archiveKey = createTimelineArchiveKey();
+  if(!DATA.dailyTimelines) DATA.dailyTimelines = {};
+  DATA.dailyTimelines[archiveKey] = {
+    date: dateKey,
+    savedAt: new Date().toISOString(),
+    timeline: {
+      coffeeBreaks: JSON.parse(JSON.stringify(DATA.coffeeBreaks || [])),
+      lunchBreaks: JSON.parse(JSON.stringify(DATA.lunchBreaks || [])),
+      triageSlots: JSON.parse(JSON.stringify(DATA.triageSlots || [])),
+      customTasks: JSON.parse(JSON.stringify(DATA.customTasks || [])),
+      onLeave: JSON.parse(JSON.stringify(DATA.onLeave || [])),
+      shiftManagerViewDate: shiftManagerViewDate || dateKey
+    }
+  };
+  DATA.coffeeBreaks = [];
+  DATA.lunchBreaks = [];
+  DATA.triageSlots = [];
+  DATA.customTasks = [];
+  DATA.onLeave = [];
+  DATA.shiftManagerViewDate = null;
+  DATA.lastUpdated = new Date().toISOString();
+  try {
+    await setDoc(DOC_REF, DATA);
+    if(el) el.textContent = `Saved & cleared timeline for ${dateKey}`;
+    render();
+    renderLastUpdated();
+    setTimeout(setStatusBar, 3000);
+  } catch(e){
+    if(el) el.textContent='⚠ Timeline save failed: '+e.message;
+    console.error('Firestore save error:', e);
+  }
+}
+
 // ─── AGENT BREAK SAVE (no auth required — only writes coffeeBreaks) ───
 async function saveAgentBreak(){
   const errEl = document.getElementById('abm-err');
@@ -1200,6 +1322,158 @@ function renderLastUpdated(){
     el.textContent='Updated '+d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   } else {
     el.textContent='';
+  }
+}
+
+function buildTimelineHistoryRow(dateKey, entry){
+  const visibleBreaks = (entry.timeline.coffeeBreaks||[]).length + (entry.timeline.lunchBreaks||[]).length;
+  const visibleSlots = (entry.timeline.triageSlots||[]).length;
+  const visibleTasks = (entry.timeline.customTasks||[]).length;
+  const visibleLeave = (entry.timeline.onLeave||[]).length;
+  const selected = selectedDailyTimelineKey === dateKey ? 'background:rgba(61,158,255,0.12);border-color:rgba(61,158,255,0.24);' : '';
+  return `<div class="break-row" style="display:flex;align-items:center;gap:10px;${selected}">
+    <div data-action="select-timeline" data-key="${dateKey}" style="flex:1;min-width:0;cursor:pointer;">
+      <div style="font-weight:700;">${dateKey}</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">Saved at ${new Date(entry.savedAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+    </div>
+    <div data-action="select-timeline" data-key="${dateKey}" style="text-align:right;min-width:120px;font-size:11px;color:var(--muted);font-family:var(--mono);cursor:pointer;">
+      ${visibleBreaks} breaks · ${visibleSlots} triage · ${visibleTasks} tasks · ${visibleLeave} leave
+    </div>
+    <button type="button" class="timeline-delete-btn" data-action="delete-timeline" data-key="${dateKey}" style="padding:4px 8px;background:var(--red);color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;flex-shrink:0;font-weight:600;">🗑</button>
+  </div>`;
+}
+
+function renderDailyTimelineHistory(){
+  const list = document.getElementById('timeline-history-list');
+  const preview = document.getElementById('timeline-history-preview');
+  if(!list||!preview) return;
+  const entries = Object.entries(DATA.dailyTimelines || {}).sort((a,b)=>b[0].localeCompare(a[0]));
+  if(!entries.length){
+    list.innerHTML = '<div class="empty">No saved timelines</div>';
+    preview.innerHTML = '<div style="font-size:12px;color:var(--muted);">Saved timeline snapshots will appear here.</div>';
+    selectedDailyTimelineKey = null;
+    return;
+  }
+  list.innerHTML = entries.map(([key, entry])=>buildTimelineHistoryRow(key, entry)).join('');
+  if(!selectedDailyTimelineKey || !DATA.dailyTimelines[selectedDailyTimelineKey]){
+    selectedDailyTimelineKey = entries[0][0];
+  }
+  renderDailyTimelinePreview();
+}
+
+function buildSavedTimelinePanel(entry){
+  const now = nowMins(), np = pct(now);
+  const timeline = entry.timeline || {};
+  const coffeeBreaks = Array.isArray(timeline.coffeeBreaks) ? timeline.coffeeBreaks : [];
+  const lunchBreaks = Array.isArray(timeline.lunchBreaks) ? timeline.lunchBreaks : [];
+  const triageSlots = Array.isArray(timeline.triageSlots) ? timeline.triageSlots : [];
+  const customTasks = Array.isArray(timeline.customTasks) ? timeline.customTasks : [];
+  const agents=[...new Set([
+    ...coffeeBreaks.map(b=>b.agent),
+    ...lunchBreaks.map(b=>b.agent),
+    ...triageSlots.map(t=>t.agent),
+    ...customTasks.map(t=>t.agent)
+  ])];
+  const rows = agents.map(ag=>{
+    const bbs=[
+      ...coffeeBreaks.map((b,i)=>b.agent===ag?{...b,type:'coffee',idx:i}:null).filter(Boolean),
+      ...lunchBreaks.map((b,i)=>b.agent===ag?{...b,type:'lunch',idx:i}:null).filter(Boolean)
+    ].sort((a,b)=>a.start-b.start).map(b=>`<div class="tl-bar tl-${b.type}"
+        style="left:${pct(b.start)}%;width:${pctw(b.end-b.start)}%"
+        data-type="${b.type}" data-idx="${b.idx}" data-start="${b.start}" data-end="${b.end}"
+        data-tip="${fmtM(b.start)}–${fmtM(b.end)} · ${b.type==='coffee'?'☕ Coffee break':'🍕 Lunch break'} · ${b.agent}"
+      ></div>`).join('');
+    const tks = customTasks.filter(t=>t.agent===ag).map(t=>{
+      const accent=(ACCENT_COLORS.find(c=>c.key===t.color)||ACCENT_COLORS[0]).val;
+      return `<div class="tl-bar tl-custom"
+        style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%;background:${accent}"
+        data-tip="${fmtM(t.start)}–${fmtM(t.end)} · ${t.title} · ${t.agent}"
+      ></div>`;
+    }).join('');
+    const tbs = triageSlots.filter(t=>t.agent===ag).map(t=>{
+      const isNow = now>=t.start && now<t.end;
+      return `<div class="tl-bar tl-triage${isNow?' tl-triage-now':''}"
+          style="left:${pct(t.start)}%;width:${pctw(t.end-t.start)}%"
+          data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
+        ></div>`;
+    }).join('');
+    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
+  }).join('');
+  return `<div class="card phone-timeline-panel" style="height:100%;min-height:280px;">
+    <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Saved timeline ${entry.date}</div></div>
+    <div id="tl-wrap">${rows}</div>
+    <div class="tl-times"><span>08:00</span><span>09:00</span><span>10:00</span><span>11:00</span><span>12:00</span><span>13:00</span><span>14:00</span><span>15:00</span><span>16:00</span><span>17:00</span><span>18:00</span></div>
+    <div class="tl-legend"><span><span class="leg-box" style="background:var(--amber)"></span>Coffee</span><span><span class="leg-box" style="background:var(--green)"></span>Lunch</span><span><span class="leg-box" style="background:var(--teal);opacity:0.75;"></span>Triage</span><span><span class="leg-box" style="background:var(--purple)"></span>Custom</span><span><span class="leg-box" style="background:var(--red)"></span>Now</span></div>
+  </div>`;
+}
+
+function renderDailyTimelinePreview(){
+  const preview = document.getElementById('timeline-history-preview');
+  const timelineContainer = document.getElementById('timeline-history-timeline');
+  if(!preview||!timelineContainer) return;
+  if(!selectedDailyTimelineKey || !DATA.dailyTimelines[selectedDailyTimelineKey]){
+    preview.innerHTML = '<div style="font-size:12px;color:var(--muted);">Select a saved timeline to view details.</div>';
+    timelineContainer.innerHTML = '';
+    return;
+  }
+  const entry = DATA.dailyTimelines[selectedDailyTimelineKey];
+  const t = entry.timeline || {};
+  preview.innerHTML = `
+    <div style="font-size:13px;font-weight:700;margin-bottom:8px;">${selectedDailyTimelineKey}</div>
+    <div style="font-size:11px;color:var(--muted);font-family:var(--mono);margin-bottom:10px;">Saved at ${new Date(entry.savedAt).toLocaleString([], {hour:'2-digit',minute:'2-digit',month:'short',day:'numeric'})}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <div style="background:rgba(61,158,255,0.08);padding:10px;border-radius:12px;">Coffee breaks<br><strong>${(t.coffeeBreaks||[]).length}</strong></div>
+      <div style="background:rgba(255,179,64,0.08);padding:10px;border-radius:12px;">Lunch breaks<br><strong>${(t.lunchBreaks||[]).length}</strong></div>
+      <div style="background:rgba(0,229,160,0.08);padding:10px;border-radius:12px;">Triage slots<br><strong>${(t.triageSlots||[]).length}</strong></div>
+      <div style="background:rgba(181,122,255,0.08);padding:10px;border-radius:12px;">Tasks<br><strong>${(t.customTasks||[]).length}</strong></div>
+      <div style="background:rgba(255,79,79,0.08);padding:10px;border-radius:12px;grid-column:1 / -1;">On leave<br><strong>${(t.onLeave||[]).length}</strong></div>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--muted);font-family:var(--mono);">View date: ${t.shiftManagerViewDate || 'today'}</div>
+  `;
+  timelineContainer.innerHTML = buildSavedTimelinePanel(entry);
+}
+
+function selectDailyTimeline(key){
+  if(!DATA.dailyTimelines || !DATA.dailyTimelines[key]) return;
+  selectedDailyTimelineKey = key;
+  renderDailyTimelineHistory();
+}
+
+function openTimelineHistoryModal(){
+  renderDailyTimelineHistory();
+  document.getElementById('timeline-history-modal').classList.add('open');
+}
+
+function closeTimelineHistoryModal(){
+  document.getElementById('timeline-history-modal').classList.remove('open');
+}
+
+let pendingDeleteKey = null;
+
+function confirmDeleteTimeline(){
+  const msg = document.getElementById('delete-timeline-msg');
+  if(!pendingDeleteKey || !DATA.dailyTimelines || !DATA.dailyTimelines[pendingDeleteKey]) return;
+  msg.textContent = `Delete timeline saved for ${pendingDeleteKey}? This cannot be undone.`;
+  document.getElementById('delete-timeline-modal').classList.add('open');
+}
+
+async function executeDeleteTimeline(){
+  if(!pendingDeleteKey || !DATA.dailyTimelines || !DATA.dailyTimelines[pendingDeleteKey]) return;
+  delete DATA.dailyTimelines[pendingDeleteKey];
+  if(selectedDailyTimelineKey === pendingDeleteKey){
+    selectedDailyTimelineKey = null;
+  }
+  pendingDeleteKey = null;
+  document.getElementById('delete-timeline-modal').classList.remove('open');
+  if(!_firestoreAvailable){
+    renderDailyTimelineHistory();
+    return;
+  }
+  try {
+    await setDoc(DOC_REF, DATA);
+    renderDailyTimelineHistory();
+  } catch(e){
+    console.error('Delete timeline failed:', e);
   }
 }
 
@@ -1649,6 +1923,7 @@ function render(){
   renderPhoneTimeline();
   renderRequestPip();
   renderViewerGrid();
+  renderDailyTimelineHistory();
   renderLastUpdated();
   renderTopPerformers();
   populateAgentSelect();
@@ -2921,6 +3196,27 @@ document.getElementById('abm-ok-btn').addEventListener('click',confirmAgentBreak
 document.getElementById('abm-agent').addEventListener('change',updateAbmQuota);
 document.getElementById('abm-pw').addEventListener('keydown',e=>{if(e.key==='Enter')confirmAgentBreak();});
 document.getElementById('save-btn').addEventListener('click',saveData);
+document.getElementById('archive-timeline-btn').addEventListener('click',archiveCurrentTimeline);
+document.getElementById('save-timeline-btn').addEventListener('click',saveDailyTimeline);
+document.getElementById('open-timeline-history-btn').addEventListener('click',openTimelineHistoryModal);
+document.getElementById('timeline-history-close-btn').addEventListener('click',closeTimelineHistoryModal);
+document.getElementById('timeline-history-list').addEventListener('click',e=>{
+  const deleteBtn = e.target.closest('[data-action="delete-timeline"]');
+  if(deleteBtn){
+    e.stopPropagation();
+    pendingDeleteKey = deleteBtn.dataset.key;
+    confirmDeleteTimeline();
+    return;
+  }
+  const row = e.target.closest('[data-action="select-timeline"]');
+  if(!row) return;
+  selectDailyTimeline(row.dataset.key);
+});
+document.getElementById('delete-timeline-cancel-btn').addEventListener('click',()=>{
+  pendingDeleteKey = null;
+  document.getElementById('delete-timeline-modal').classList.remove('open');
+});
+document.getElementById('delete-timeline-confirm-btn').addEventListener('click',executeDeleteTimeline);
 document.getElementById('add-coffee-btn').addEventListener('click',()=>openModal('coffee'));
 document.getElementById('add-lunch-btn').addEventListener('click',()=>openModal('lunch'));
 document.getElementById('import-excel-btn').addEventListener('click',openExcelModal);
