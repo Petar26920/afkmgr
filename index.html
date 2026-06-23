@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AFK Manager v2</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+
+<!-- TIMELINE TOOLTIP -->
+<div id="tl-tooltip" style="position:fixed;pointer-events:none;z-index:9999;display:none;background:#0d1219;border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:6px 11px;font-family:'Space Grotesk',sans-serif;font-size:12px;white-space:nowrap;line-height:1.5;box-shadow:0 4px 16px rgba(0,0,0,0.5);"></div>
+
+<!-- LOCK SCREEN -->
+<div id="lock-screen">
+  <div class="lock-card">
+    <div class="lock-logo">AFK · v2</div>
+    <div class="lock-title">Admin <span>Access</span></div>
+    <div class="lock-sub">Sign in with your admin Firebase account</div>
+    <div id="pw-section">
+      <input type="email" class="lock-input" id="admin-email" placeholder="admin@yourdomain.com" autocomplete="username"/>
+      <input type="password" class="lock-input" id="pw-input" placeholder="Password" autocomplete="current-password"/>
+    </div>
+    <button class="lock-btn" id="lock-unlock-btn">Unlock Admin</button>
+    <button class="lock-btn viewer" style="margin-top:8px;" id="lock-back-btn">← Back to viewer</button>
+    <div class="lock-err" id="lock-err"></div>
+  </div>
+</div>
+
+<!-- ADD BREAK MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h2>Add break</h2>
+    <p>Choose agent, type and time slot for the new break entry.</p>
+    <div class="modal-field"><label>Agent</label><select id="m-agent"></select></div>
+    <div class="modal-field"><label>Type</label>
+      <select id="m-type">
+        <option value="coffee">☕ Coffee / Smoke (10–30 min)</option>
+        <option value="lunch">🍕 Lunch (30 min)</option>
+      </select>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Start time</label><input type="time" id="m-start" value="10:00" min="08:00" max="17:30"/></div>
+      <div class="modal-field"><label>End time</label><input type="time" id="m-end" value="10:10" min="08:10" max="18:00"/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modal-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="modal-ok-btn">Add break</button>
+    </div>
+  </div>
+</div>
+
+<!-- BREAK REQUEST MODAL -->
+<div class="modal-overlay" id="break-request-modal">
+  <div class="modal">
+    <h2>🔄 Request break edit</h2>
+    <p>Update the break time and enter a reason for admin approval.</p>
+    <div class="modal-field"><label>Agent</label><input type="text" id="br-agent" readonly/></div>
+    <div class="modal-field"><label>Break type</label><input type="text" id="br-type" readonly/></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>New start</label><input type="time" id="br-start" value="10:00" min="08:00" max="17:30"/></div>
+      <div class="modal-field"><label>New end</label><input type="time" id="br-end" value="10:30" min="08:10" max="18:00"/></div>
+    </div>
+    <div class="modal-field"><label>Reason</label><textarea id="br-reason" placeholder="Explain why the edit is needed" style="height:100px;"></textarea></div>
+    <div class="modal-field"><label>Password</label><input type="password" class="lock-input" id="br-pw" placeholder="Agent password"/></div>
+    <div class="lock-err" id="br-err"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="br-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="br-ok-btn" style="background:var(--blue);">Request approval</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXCEL IMPORT MODAL -->
+<div class="modal-overlay" id="excel-modal">
+  <div class="modal" style="width:520px;max-width:95vw;">
+    <h2>📋 Import from Excel</h2>
+    <p style="margin-bottom:8px;">Paste your Excel break schedule below. Expected columns: <span style="font-family:var(--mono);color:var(--amber)">Time Slot · Agent 1 · Agent 2 (…)</span></p>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px;">The first row is treated as a header and skipped. Rows with a name in any agent column become breaks. Slots of 10 min = coffee break; 30 min = lunch break.</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.04em;text-transform:uppercase;display:block;margin-bottom:5px;">Import mode</label>
+      <div style="display:flex;gap:6px;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;"><input type="radio" name="import-mode" value="replace" checked style="accent-color:var(--blue);"> Replace all current breaks</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;"><input type="radio" name="import-mode" value="merge"> Merge with existing</label>
+      </div>
+    </div>
+    <textarea id="excel-paste" placeholder="Paste Excel data here (Ctrl+V)…" style="width:100%;height:200px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>
+    <div id="excel-preview" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono);min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="excel-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="excel-ok-btn" style="background:var(--green);color:#000;">✓ Import breaks</button>
+    </div>
+  </div>
+</div>
+
+<!-- MS SHIFTS IMPORT MODAL -->
+<div class="modal-overlay" id="shift-import-modal">
+  <div class="modal" style="width:560px;max-width:95vw;">
+    <h2>📋 Import Shifts from MS Shifts</h2>
+    <p style="margin-bottom:8px;">Paste the schedule export from Microsoft Shifts. Expected columns include <span style="font-family:var(--mono);color:var(--amber)">Date · Start · End · Assigned To</span>.</p>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:14px;">The first row is treated as a header and skipped. Multiple agents in one shift may be separated by commas, semicolons, or copied into separate columns.</p>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.04em;text-transform:uppercase;display:block;margin-bottom:5px;">Import mode</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;"><input type="radio" name="shift-import-mode" value="replace" checked style="accent-color:var(--blue);"> Replace all current shifts</label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;"><input type="radio" name="shift-import-mode" value="merge"> Merge with existing</label>
+      </div>
+    </div>
+    <textarea id="shift-import-paste" placeholder="Paste MS Shifts data here (Ctrl+V)…" style="width:100%;height:220px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>
+    <div id="shift-import-preview" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono);min-height:18px;"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="shift-import-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="shift-import-ok-btn" style="background:var(--green);color:#000;">✓ Import shifts</button>
+    </div>
+  </div>
+</div>
+
+<!-- AGENT BREAK MODAL -->
+<div class="modal-overlay" id="agent-break-modal">
+  <div class="modal" style="width:380px;">
+    <h2>☕ Book My Break</h2>
+    <p>Enter your name and password to book a comfort break.</p>
+    <div class="abm-info">Max <span>30 min</span> total coffee breaks per day &nbsp;·&nbsp; Max <span>2 agents</span> at the same time</div>
+    <div class="modal-field"><label>Your name</label><select id="abm-agent"></select></div>
+    <div class="modal-field"><label>Your password</label><input type="password" class="lock-input" id="abm-pw" placeholder="Password" style="margin-bottom:0;text-align:left;letter-spacing:normal;"/></div>
+    <div class="modal-row" style="margin-top:14px;">
+      <div class="modal-field"><label>Start time</label><input type="time" id="abm-start" value="10:00" min="08:00" max="17:30"/></div>
+      <div class="modal-field"><label>Duration</label>
+        <select id="abm-duration">
+          <option value="10">10 min</option><option value="15">15 min</option><option value="20">20 min</option><option value="25">25 min</option><option value="30">30 min</option>
+        </select>
+      </div>
+    </div>
+    <div class="abm-quota">
+      <span style="color:var(--muted);font-size:10px;">Quota used:</span>
+      <div class="quota-bar-wrap"><div class="quota-bar" id="abm-quota-bar" style="width:0%"></div></div>
+      <span id="abm-quota-label" style="color:var(--muted);font-size:10px;white-space:nowrap;">0 / 30 min</span>
+    </div>
+    <div class="abm-err" id="abm-err"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="abm-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="abm-ok-btn" style="background:var(--amber);color:#000;">☕ Book break</button>
+    </div>
+  </div>
+</div>
+
+<!-- ON LEAVE MODAL -->
+<div class="modal-overlay" id="leave-modal">
+  <div class="modal" style="width:340px;">
+    <h2>Mark on leave</h2>
+    <p>Agent will appear on the wallboard as away.</p>
+    <div class="modal-field"><label>Agent</label><select id="lv-agent"></select></div>
+    <div class="modal-field"><label>Note <span style="color:var(--muted);font-size:10px;text-transform:none;letter-spacing:0;">(optional)</span></label><input type="text" id="lv-note" placeholder="e.g. Annual leave, Sick leave…" maxlength="40"/></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="lv-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="lv-ok-btn" style="background:var(--purple);">Mark on leave</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM PANEL MODAL -->
+<div class="modal-overlay" id="custom-panel-modal">
+  <div class="modal" style="width:480px;max-width:95vw;">
+    <h2>📝 Custom Text Panel</h2>
+    <p>Create a panel with a custom title and free-form text content.</p>
+    <div class="modal-field"><label>Panel title</label><input type="text" id="cp-title" placeholder="e.g. Team Announcements" maxlength="60"/></div>
+    <div class="modal-field"><label>Content</label><textarea id="cp-body" placeholder="Type your announcement, note, or any content here…" style="height:120px;"></textarea></div>
+    <div class="modal-field">
+      <label>Accent colour</label>
+      <div class="color-swatches" id="cp-color-swatches"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="cp-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="cp-ok-btn" style="background:var(--purple);">Add panel</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MODAL -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <h2>➕ Add custom task</h2>
+    <p>Add a custom task for an agent and schedule its time.</p>
+    <div class="modal-field"><label>Agent</label><select id="task-agent"></select></div>
+    <div class="modal-field"><label>Title</label><input type="text" id="task-title" maxlength="80" placeholder="Short task title"/></div>
+    <div class="modal-row">
+      <div class="modal-field"><label>Start time</label><input type="time" id="task-start" value="10:00" min="08:00" max="17:30"/></div>
+      <div class="modal-field"><label>End time</label><input type="time" id="task-end" value="10:30" min="08:10" max="18:00"/></div>
+    </div>
+    <div class="modal-field"><label>Accent colour</label><div class="color-swatches" id="task-color-swatches"></div></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="task-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="task-ok-btn" style="background:var(--teal);color:#000;">Add task</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE TIMELINE CONFIRMATION MODAL -->
+<div class="modal-overlay" id="delete-timeline-modal">
+  <div class="modal" style="width:420px;max-width:95vw;">
+    <h2>🗑 Delete saved timeline?</h2>
+    <p id="delete-timeline-msg" style="margin:12px 0;font-size:14px;color:var(--muted);"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="delete-timeline-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="delete-timeline-confirm-btn" style="background:var(--red);">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TIMELINE HISTORY MODAL -->
+<div class="modal-overlay" id="timeline-history-modal">
+  <div class="modal" style="width:920px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px;flex-shrink:0;">
+      <div>
+        <h2>🗂 Saved timeline history</h2>
+        <p style="margin:8px 0 0;font-size:12px;color:var(--muted);max-width:620px;">Select a saved date to preview the timeline and see the timeline layout in the same window.</p>
+      </div>
+      <button class="modal-cancel" id="timeline-history-close-btn" style="padding:8px 14px;">Close</button>
+    </div>
+    <div style="display:flex;gap:16px;flex:1;min-height:0;overflow:hidden;">
+      <div style="flex:0 0 340px;min-width:280px;max-height:100%;overflow:auto;display:flex;flex-direction:column;">
+        <div id="timeline-history-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+      <div style="flex:1 1 520px;min-width:280px;display:flex;flex-direction:column;gap:14px;overflow:hidden;min-height:0;">
+        <div id="timeline-history-preview" style="background:var(--surface2);border:1px solid var(--border2);border-radius:16px;padding:16px;overflow:auto;flex-shrink:0;max-height:180px;"></div>
+        <div id="timeline-history-timeline" style="flex:1;overflow:auto;min-height:0;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LAYOUT EDITOR -->
+<div id="layout-editor-overlay">
+  <div class="le-header">
+    <div>
+      <div class="le-title"><span>⊞ Viewer Layout Editor</span><span class="le-title-badge">ADMIN TOOL</span></div>
+      <div class="le-subtitle">Drag panels · adjust width/height · toggle visibility · add custom panels</div>
+    </div>
+    <div class="le-actions">
+      <button class="le-btn le-btn-reset" id="le-reset-btn">↺ Reset defaults</button>
+      <button class="le-btn le-btn-cancel" id="le-cancel-btn">✕ Cancel</button>
+      <button class="le-btn le-btn-save" id="le-save-btn">💾 Save layout</button>
+    </div>
+  </div>
+  <div class="le-body">
+    <div class="le-hint">
+      <span class="le-hint-icon">💡</span>
+      <span>12-column grid. Use <strong>− +</strong> to change width, <strong>↑ ↓</strong> to adjust height. Drag tiles between rows. Toggle 👁 to hide. Add rows and custom text panels freely.</span>
+    </div>
+    <div id="le-rows-container" class="le-rows" style="display:flex;flex-direction:column;gap:16px;"></div>
+    <div class="le-row-controls">
+      <button class="le-row-btn" id="le-add-row-btn">+ Add row</button>
+    </div>
+    <div class="le-panel-picker" id="le-panel-picker">
+      <div class="le-picker-title">Available panels — click to add to last row</div>
+    </div>
+  </div>
+</div>
+
+<!-- PHONE LAYOUT EDITOR -->
+<div id="phone-layout-editor-overlay">
+  <div class="le-header">
+    <div>
+      <div class="le-title"><span>⊞ Phone View Layout</span><span class="le-title-badge">ADMIN TOOL</span></div>
+      <div class="le-subtitle">Reorder and show/hide phone view sections.</div>
+    </div>
+    <div class="le-actions">
+      <button class="le-btn le-btn-cancel" id="ple-cancel-btn">✕ Close</button>
+      <button class="le-btn le-btn-reset" id="ple-reset-btn">↺ Reset defaults</button>
+      <button class="le-btn le-btn-save" id="ple-save-btn">💾 Save</button>
+    </div>
+  </div>
+  <div class="le-body">
+    <div class="le-hint">
+      <span class="le-hint-icon">💡</span>
+      <span>Use the buttons to reorder sections and control which snapshot blocks appear in phone view. Desktop panels remain hidden on phone — only the live snapshot is shown.</span>
+    </div>
+    <div id="ple-sections-container" class="ple-sections"></div>
+    <div style="margin-top:12px;">
+      <div class="le-picker-title">Available panels — click to add to phone view</div>
+      <div id="ple-panel-picker" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="header">
+    <div class="header-left">
+      <div class="logo-badge">AFK v2</div>
+      <div class="header-title">Manager <span>Wallboard</span></div>
+    </div>
+    <div class="header-right">
+      <div>
+        <div class="clock-display" id="clock">--:--:--</div>
+        <div class="date-display" id="date-str"></div>
+        <div class="updated-display" id="last-updated-display"></div>
+      </div>
+      <div class="mode-badge viewer" id="mode-badge">VIEWER</div>
+      <div class="mode-badge request-pip" id="request-pip" style="display:none;">0</div>
+      <button class="nav-burger-btn" id="nav-burger-btn" aria-label="Toggle mobile menu">☰</button>
+      <div class="nav-actions" id="nav-actions">
+        <button class="layout-edit-btn" id="layout-edit-btn">⊞ Edit Layout</button>
+        <button class="layout-edit-btn phone-layout-edit-btn" id="phone-layout-edit-btn">⊞ Edit Phone View</button>
+        <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
+        <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="metrics">
+      <div class="metric m-blue"><div class="metric-label">Current active</div><div class="metric-val blue" id="m-total">0</div><div class="metric-sub">members</div></div>
+      <div class="metric m-amber"><div class="metric-label">Currently AFK</div><div class="metric-val amber" id="m-afk">0</div><div class="metric-sub" id="m-afk-sub">on break</div></div>
+      <div class="metric m-green"><div class="metric-label">On triage now</div><div class="metric-val sm green" id="m-triage">—</div><div class="metric-sub">handling queue</div></div>
+      <div class="metric m-purple"><div class="metric-label">Patching agent</div><div class="metric-val sm purple" id="m-patch-val">—</div><div class="metric-sub" id="m-patch-week-sub">this week</div></div>
+    </div>
+
+    <div class="phone-current-timeline" id="phone-current-timeline"></div>
+
+    <!-- Admin-only management panels -->
+    <div class="grid2 admin-only">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="pip pip-amber"></span>Coffee breaks</div>
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+            <label class="pill-toggle">
+              <input id="clear-eod-toggle" type="checkbox" data-action="clear-eod-toggle">
+              <span class="pill-toggle-switch"></span>
+              <span class="pill-toggle-text">Auto-clear EOD</span>
+            </label>
+            <button class="add-btn" id="import-excel-btn" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);">📋 Import Excel</button>
+            <button class="add-btn" id="add-coffee-btn">+ Add</button>
+            <button class="add-btn" id="add-task-btn">+ Task</button>
+            <button class="card-collapse-btn" data-collapse="coffee-card" title="Toggle">▶</button>
+          </div>
+        </div>
+        <div id="coffee-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-green"></span>Lunch breaks</div><div style="display:flex;gap:6px;"><button class="add-btn" id="add-lunch-btn">+ Add</button><button class="card-collapse-btn" data-collapse="lunch-card" title="Toggle">▶</button></div></div>
+        <div id="lunch-list"></div>
+      </div>
+      <div class="card" style="grid-column:1/-1;">
+        <div class="card-header"><div class="card-title"><span class="pip pip-purple"></span>On leave</div><div style="display:flex;gap:6px;"><button class="add-btn" id="add-leave-btn">+ Add</button><button class="card-collapse-btn" data-collapse="leave-card" title="Toggle">▶</button></div></div>
+        <div id="leave-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-red"></span>Break edit requests</div><button class="card-collapse-btn" data-collapse="breaks-requests-card" title="Toggle">▶</button></div>
+        <div id="break-requests-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Saved timeline history</div><button class="card-collapse-btn" data-collapse="timeline-history-card" title="Toggle">▶</button></div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-size:13px;color:var(--text);">Open the timeline history window to preview past saved dates and see the timeline layout.</div>
+          <button class="add-btn" id="open-timeline-history-btn">🗂 View saved timelines</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-teal"></span>Custom tasks</div><div style="display:flex;gap:6px;"><button class="add-btn" id="add-task-card-btn">+ Add</button><button class="card-collapse-btn" data-collapse="custom-tasks-card" title="Toggle">▶</button></div></div>
+        <div id="custom-tasks-list"></div>
+      </div>
+      <div class="card" style="grid-column:1/-1;">
+        <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div><button class="card-collapse-btn" data-collapse="triage-card" title="Toggle">▶</button></div>
+        <div class="triage-grid" id="triage-grid"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-purple"></span>Patching agent</div><button class="card-collapse-btn" data-collapse="patching-card" title="Toggle">▶</button></div>
+        <div class="patching-section">
+          <div class="patching-week" id="patch-week-badge">Week 20</div>
+          <span class="patch-agent-display" id="patch-display">—</span>
+          <input class="patch-input" id="patch-input" type="text" placeholder="Agent name" />
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title"><span class="pip pip-red"></span>Break rules</div><button class="card-collapse-btn" data-collapse="rules-card" title="Toggle">▶</button></div>
+        <div class="rules-list" id="rules-list"></div>
+      </div>
+      <div class="card" style="grid-column:1/-1;">
+        <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Agent roster &amp; passwords</div><button class="card-collapse-btn" data-collapse="agents-card" title="Toggle">▶</button></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px;" class="admin-mode-labels">
+          <div style="display:flex;gap:7px;align-items:center;padding:0 0 4px;border-bottom:1px solid var(--border2);">
+            <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:24px;text-align:center;">Av</span>
+            <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;flex:1;">Name</span>
+            <span style="font-size:9px;color:var(--amber);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:116px;">Break password</span>
+            <span style="font-size:9px;color:var(--green);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:80px;">In breaks</span>
+            <span style="width:20px;"></span>
+          </div>
+          <div style="display:flex;gap:7px;align-items:center;padding:0 0 4px;border-bottom:1px solid var(--border2);">
+            <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:24px;text-align:center;">Av</span>
+            <span style="font-size:9px;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;flex:1;">Name</span>
+            <span style="font-size:9px;color:var(--amber);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:116px;">Break password</span>
+            <span style="font-size:9px;color:var(--green);font-family:var(--mono);text-transform:uppercase;letter-spacing:.08em;width:80px;">In breaks</span>
+            <span style="width:20px;"></span>
+          </div>
+        </div>
+        <div class="agents-grid" id="agents-grid"></div>
+        <button class="add-agent-btn" id="add-agent-btn">+ Add agent</button>
+      </div>
+
+      <!-- TOP PERFORMERS ADMIN CARD -->
+      <div class="card" style="grid-column:1/-1;">
+        <div class="card-header">
+          <div class="card-title"><span class="pip pip-amber"></span>Top performers</div>
+          <div style="display:flex;gap:6px;align-items:center;">
+            <span id="tp-date-badge" style="font-size:10px;font-family:var(--mono);color:var(--muted);background:var(--surface2);padding:3px 8px;border-radius:4px;border:1px solid var(--border);"></span>
+            <button class="card-collapse-btn" data-collapse="top-performers-card" title="Toggle">▶</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+          <div style="min-width:220px;flex:1;max-width:320px;">
+            <label style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">Date</label>
+            <input type="date" id="tp-date" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;" />
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end;">
+          <div>
+            <label style="font-size:10px;color:var(--amber);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">💬 Chat top performer</label>
+            <select id="tp-chat" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;color:#aab4c4;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">📞 Phone top performer</label>
+            <select id="tp-phone" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;color:#cd7f32;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">🎫 Tickets closed</label>
+            <select id="tp-tickets" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"></select>
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:5px;">Note (optional)</label>
+            <input type="text" id="tp-note" maxlength="80" placeholder="e.g. Highest tickets closed on this date" style="width:100%;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:7px 10px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;"/>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px;">
+          <button id="tp-save-btn" style="padding:7px 20px;background:var(--amber);color:#000;border:none;border-radius:6px;font-family:var(--font);font-size:12px;font-weight:700;cursor:pointer;">💾 Save top performers</button>
+        </div>
+        <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:14px;">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-family:var(--mono);margin-bottom:10px;">History</div>
+          <div id="tp-history"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEWER LAYOUT GRID -->
+    <div id="viewer-grid"></div>
+
+    <div class="bottom-bar admin-only" style="gap:10px;align-items:center;flex-wrap:wrap;">
+      <span id="last-update">Live · updates every 30s</span>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="save-btn" id="save-btn">💾 Save changes</button>
+        <button class="save-btn" id="archive-timeline-btn">📦 Archive timeline</button>
+        <button class="save-btn" id="save-timeline-btn">🗓 Save & clear timeline</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <script type="module" src="./app.js"></script>
+
+</body>
+</html>
