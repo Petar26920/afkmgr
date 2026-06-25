@@ -112,6 +112,7 @@ let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
 let activeModalType = 'coffee';
 const PHONE_TIMELINE_EXPANDED_SECTIONS = {};
 let _firestoreAvailable = true;
+let _realtimeUnsubscribe = null;
 let shiftManagerViewDate = null;
 let selectedDailyTimelineKey = null;
 
@@ -256,17 +257,28 @@ async function loadData(){
     _firestoreAvailable = false;
   }
   render(); setStatusBar();
+  attachRealtimeListener();
+}
+
+function detachRealtimeListener(){
+  if(_realtimeUnsubscribe){
+    _realtimeUnsubscribe();
+    _realtimeUnsubscribe = null;
+  }
 }
 
 function attachRealtimeListener(){
-  if(!_firestoreAvailable) return;
-  onSnapshot(DOC_REF, (snap)=>{
-    console.debug('Firestore snapshot update:', {exists:snap.exists(), path: DOC_REF.path});
+  if(!_firestoreAvailable || _realtimeUnsubscribe) return;
+  _realtimeUnsubscribe = onSnapshot(DOC_REF, (snap)=>{
     if(!snap.exists()) return;
     const d = snap.data();
     DATA = normalizeData(d);
     render();
-  }, (err)=>console.warn('Realtime listener error:', err.message));
+  }, (err)=>{
+    _firestoreAvailable = false;
+    detachRealtimeListener();
+    console.warn('Realtime listener disconnected:', err?.message || err);
+  });
 }
 
 async function saveData(){
@@ -274,7 +286,7 @@ async function saveData(){
   const el = document.getElementById('last-update');
   if(!_firestoreAvailable){ if(el) el.textContent='⚠ Offline — changes not saved'; return; }
   try {
-    await setDoc(DOC_REF, DATA, { merge: true }, { merge: true });
+    await setDoc(DOC_REF, DATA, { merge: true });
     if(el) el.textContent='Saved · '+new Date().toLocaleTimeString();
     renderLastUpdated();
     setTimeout(setStatusBar, 3000);
@@ -2563,14 +2575,15 @@ document.getElementById('app').addEventListener('click',e=>{
 // ─── BOOT ───
 applyMode();
 render();
-loadData().then(()=>attachRealtimeListener());
+loadData();
 onAuthStateChanged(auth,(user)=>{
   document.getElementById('lock-screen').style.display='none';
   applyMode();
-  if(user && !_firestoreAvailable){
+  if(user){
     _firestoreAvailable = true;
-    loadData().then(()=>attachRealtimeListener()).catch(e=>console.error('Reload after auth failed:', e));
+    loadData().catch(e=>console.error('Reload after auth failed:', e));
   } else {
+    detachRealtimeListener();
     render();
   }
 });
