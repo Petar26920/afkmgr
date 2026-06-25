@@ -197,6 +197,18 @@
   </div>
 </div>
 
+<!-- CLEAR COMFORT BREAKS CONFIRMATION MODAL -->
+<div class="modal-overlay" id="clear-breaks-modal">
+  <div class="modal" style="width:420px;max-width:95vw;">
+    <h2>🧹 Clear comfort breaks?</h2>
+    <p style="margin:12px 0;font-size:14px;color:var(--muted);">This will remove all current comfort/coffee breaks from the timeline. This action can be undone by re-adding them manually.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="clear-breaks-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="clear-breaks-confirm-btn" style="background:var(--amber);color:#000;">Clear breaks</button>
+    </div>
+  </div>
+</div>
+
 <!-- DELETE TIMELINE CONFIRMATION MODAL -->
 <div class="modal-overlay" id="delete-timeline-modal">
   <div class="modal" style="width:420px;max-width:95vw;">
@@ -329,8 +341,9 @@
             <label class="pill-toggle">
               <input id="clear-eod-toggle" type="checkbox" data-action="clear-eod-toggle">
               <span class="pill-toggle-switch"></span>
-              <span class="pill-toggle-text">Auto-clear EOD</span>
+              <span class="pill-toggle-text">Auto-clear 23:59</span>
             </label>
+            <button class="add-btn" id="clear-comfort-breaks-btn" style="background:var(--amber2);border-color:var(--amber);color:var(--amber);">🧹 Clear now</button>
             <button class="add-btn" id="import-excel-btn" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);">📋 Import Excel</button>
             <button class="add-btn" id="add-coffee-btn">+ Add</button>
             <button class="add-btn" id="add-task-btn">+ Task</button>

@@ -105,6 +105,7 @@ const DEFAULT_DATA = {
   dailyTimelines: {},
   lastUpdated: null,
   cardCollapse: {},
+  lastEODClearDate: null,
 };
 
 let DATA = JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -154,6 +155,7 @@ function normalizeData(d){
     lastUpdated:       d.lastUpdated ?? null,
     cardCollapse:      d.cardCollapse && typeof d.cardCollapse === 'object' ? d.cardCollapse : {},
     clearComfortBreaksAtEOD: typeof d.clearComfortBreaksAtEOD === 'boolean' ? d.clearComfortBreaksAtEOD : false,
+    lastEODClearDate:  typeof d.lastEODClearDate === 'string' ? d.lastEODClearDate : null,
   };
 }
 
@@ -244,7 +246,7 @@ async function loadData(){
       console.debug('Firebase document loaded:', {path: DOC_REF.path, data:d});
       DATA = normalizeData(d);
       _firestoreAvailable = true;
-      if(!d.agentPasswords) await setDoc(DOC_REF, DATA);
+      if(!d.agentPasswords) await setDoc(DOC_REF, DATA, { merge: true });
     } else {
       console.warn('Firebase document not found:', DOC_REF.path);
       _firestoreAvailable = false;
@@ -272,7 +274,7 @@ async function saveData(){
   const el = document.getElementById('last-update');
   if(!_firestoreAvailable){ if(el) el.textContent='⚠ Offline — changes not saved'; return; }
   try {
-    await setDoc(DOC_REF, DATA);
+    await setDoc(DOC_REF, DATA, { merge: true }, { merge: true });
     if(el) el.textContent='Saved · '+new Date().toLocaleTimeString();
     renderLastUpdated();
     setTimeout(setStatusBar, 3000);
@@ -308,7 +310,7 @@ async function archiveCurrentTimeline(){
   };
   DATA.lastUpdated = new Date().toISOString();
   try {
-    await setDoc(DOC_REF, DATA);
+    await setDoc(DOC_REF, DATA, { merge: true });
     if(el) el.textContent = `Archived timeline for ${dateKey}`;
     render();
     renderLastUpdated();
@@ -345,7 +347,7 @@ async function saveDailyTimeline(){
   DATA.shiftManagerViewDate = null;
   DATA.lastUpdated = new Date().toISOString();
   try {
-    await setDoc(DOC_REF, DATA);
+    await setDoc(DOC_REF, DATA, { merge: true });
     if(el) el.textContent = `Saved & cleared timeline for ${dateKey}`;
     render();
     renderLastUpdated();
@@ -612,7 +614,7 @@ async function executeDeleteTimeline(){
     return;
   }
   try {
-    await setDoc(DOC_REF, DATA);
+    await setDoc(DOC_REF, DATA, { merge: true });
     renderDailyTimelineHistory();
   } catch(e){
     console.error('Delete timeline failed:', e);
@@ -1854,6 +1856,7 @@ function updateClock(){
 }
 setInterval(updateClock,1000); updateClock();
 setInterval(render,30000);
+setInterval(maybeClearComfortBreaksAtEOD, 60000);
 
 // ─── TIMELINE TOOLTIP ───
 const _tlTip = document.getElementById('tl-tooltip');
@@ -2342,6 +2345,12 @@ document.getElementById('abm-pw').addEventListener('keydown',e=>{if(e.key==='Ent
 document.getElementById('save-btn').addEventListener('click',saveData);
 document.getElementById('archive-timeline-btn').addEventListener('click',archiveCurrentTimeline);
 document.getElementById('save-timeline-btn').addEventListener('click',saveDailyTimeline);
+const clearComfortBreaksBtn = document.getElementById('clear-comfort-breaks-btn');
+if(clearComfortBreaksBtn) clearComfortBreaksBtn.addEventListener('click', openClearBreaksModal);
+const clearBreaksCancelBtn = document.getElementById('clear-breaks-cancel-btn');
+if(clearBreaksCancelBtn) clearBreaksCancelBtn.addEventListener('click', closeClearBreaksModal);
+const clearBreaksConfirmBtn = document.getElementById('clear-breaks-confirm-btn');
+if(clearBreaksConfirmBtn) clearBreaksConfirmBtn.addEventListener('click', confirmClearComfortBreaks);
 document.getElementById('open-timeline-history-btn').addEventListener('click',openTimelineHistoryModal);
 document.getElementById('timeline-history-close-btn').addEventListener('click',closeTimelineHistoryModal);
 document.getElementById('timeline-history-list').addEventListener('click',e=>{
@@ -2464,14 +2473,45 @@ function restoreCardCollapses(){
   });
 }
 
-function maybeClearComfortBreaksAtEOD(){
-  if(!DATA.clearComfortBreaksAtEOD) return false;
-  const now = nowMins();
-  if(now < 18 * 60) return false;
+function clearComfortBreaks(){
   if(!Array.isArray(DATA.coffeeBreaks) || DATA.coffeeBreaks.length === 0) return false;
   DATA.coffeeBreaks = [];
+  DATA.lastEODClearDate = formatDateKey(new Date());
   saveData();
   return true;
+}
+
+function maybeClearComfortBreaksAtEOD(){
+  if(!DATA.clearComfortBreaksAtEOD) return false;
+  const now = new Date();
+  const currentDateKey = formatDateKey(now);
+  if(now.getHours() < 23 || (now.getHours() === 23 && now.getMinutes() < 59)) return false;
+  if(DATA.lastEODClearDate === currentDateKey) return false;
+  const cleared = clearComfortBreaks();
+  if(cleared){ DATA.lastEODClearDate = currentDateKey; }
+  return cleared;
+}
+
+function openClearBreaksModal(){
+  try{ requireAdmin(); } catch(e){ render(); return; }
+  const modal = document.getElementById('clear-breaks-modal');
+  if(modal) modal.classList.add('open');
+}
+
+function closeClearBreaksModal(){
+  const modal = document.getElementById('clear-breaks-modal');
+  if(modal) modal.classList.remove('open');
+}
+
+function confirmClearComfortBreaks(){
+  try{ requireAdmin(); } catch(e){ render(); return; }
+  const cleared = clearComfortBreaks();
+  closeClearBreaksModal();
+  render();
+  if(!cleared){
+    const el = document.getElementById('last-update');
+    if(el) el.textContent='No comfort breaks to clear';
+  }
 }
 
 function renderClearComfortBreaksToggle(){
