@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <rect x="0" y="0" width="180" height="180" rx="40" fill="#2563EB"/>
+  <path d="M52 70 L128 70 L118 138 L62 138 Z" fill="#DBEAFE"/>
+  <rect x="46" y="62" width="88" height="14" rx="7" fill="white"/>
+  <path d="M118 85 Q148 85 148 108 Q148 128 118 128" fill="none" stroke="#DBEAFE" stroke-width="10" stroke-linecap="round"/>
+  <ellipse cx="90" cy="144" rx="42" ry="7" fill="#BFDBFE"/>
+  <path d="M72 56 Q68 46 72 36" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <path d="M90 52 Q86 42 90 32" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <path d="M108 56 Q104 46 108 36" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+  <circle cx="90" cy="104" r="26" fill="#2563EB"/>
+  <circle cx="90" cy="104" r="24" fill="none" stroke="#DBEAFE" stroke-width="1.5"/>
+  <line x1="90" y1="82" x2="90" y2="86" stroke="#DBEAFE" stroke-width="2" stroke-linecap="round"/>
+  <line x1="90" y1="122" x2="90" y2="126" stroke="#DBEAFE" stroke-width="2" stroke-linecap="round"/>
+  <line x1="68" y1="104" x2="72" y2="104" stroke="#DBEAFE" stroke-width="2" stroke-linecap="round"/>
+  <line x1="108" y1="104" x2="112" y2="104" stroke="#DBEAFE" stroke-width="2" stroke-linecap="round"/>
+  <line x1="90" y1="104" x2="78" y2="97" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <line x1="90" y1="104" x2="106" y2="95" stroke="white" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="90" cy="104" r="3" fill="#BFDBFE"/>
+</svg>
