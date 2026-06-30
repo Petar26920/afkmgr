@@ -244,12 +244,10 @@ async function loadData(){
     const snap = await getDoc(DOC_REF);
     if(snap.exists()){
       const d = snap.data();
-      console.debug('Firebase document loaded:', {path: DOC_REF.path, data:d});
       DATA = normalizeData(d);
       _firestoreAvailable = true;
       if(!d.agentPasswords) await setDoc(DOC_REF, DATA, { merge: true });
     } else {
-      console.warn('Firebase document not found:', DOC_REF.path);
       _firestoreAvailable = false;
     }
   } catch(e){
@@ -1501,27 +1499,36 @@ function addAgent(){ try{requireAdmin();}catch(e){return;} const name='New Agent
 function removeAgent(idx){ try{requireAdmin();}catch(e){return;} DATA.agents.splice(idx,1); render(); saveData(); }
 
 // ─── AGENT BREAK MODAL ───
+function resolveAgentFromPasscode(passcode){
+  const passwords=DATA.agentPasswords||{};
+  const matches=Object.entries(passwords).filter(([,stored])=>String(stored)===String(passcode));
+  return matches.length===1 ? matches[0][0] : null;
+}
 function openAgentBreakModal(){
-  const breakAgents=DATA.agents.filter(a=>agentInBreaks(a));
-  const sel=document.getElementById('abm-agent'); sel.innerHTML=breakAgents.map(a=>`<option value="${a}">${a}</option>`).join('');
   document.getElementById('abm-pw').value=''; document.getElementById('abm-err').textContent='';
   updateAbmQuota(); document.getElementById('agent-break-modal').classList.add('open');
 }
 function closeAgentBreakModal(){ document.getElementById('agent-break-modal').classList.remove('open'); }
 function agentCoffeeTotalMins(n){ return DATA.coffeeBreaks.filter(b=>b.agent===n).reduce((s,b)=>s+(b.end-b.start),0); }
 function updateAbmQuota(){
-  const agent=document.getElementById('abm-agent').value;
-  const used=agentCoffeeTotalMins(agent);
+  const passcode=document.getElementById('abm-pw').value;
+  const agent=resolveAgentFromPasscode(passcode);
   const bar=document.getElementById('abm-quota-bar');
+  if(!agent){
+    bar.style.width='0%'; bar.className='quota-bar';
+    document.getElementById('abm-quota-label').textContent='Enter passcode';
+    return;
+  }
+  const used=agentCoffeeTotalMins(agent);
   bar.style.width=Math.min(100,(used/30)*100)+'%'; bar.className='quota-bar'+(used>=30?' full':'');
   document.getElementById('abm-quota-label').textContent=`${used} / 30 min`;
 }
 function confirmAgentBreak(){
-  const agent=document.getElementById('abm-agent').value, pw=document.getElementById('abm-pw').value;
+  const pw=document.getElementById('abm-pw').value;
+  const agent=resolveAgentFromPasscode(pw);
   const startVal=document.getElementById('abm-start').value, durMins=parseInt(document.getElementById('abm-duration').value);
   const errEl=document.getElementById('abm-err'); errEl.textContent='';
-  const passwords=DATA.agentPasswords||{};
-  if(!passwords[agent]||passwords[agent]!==pw){ const inp=document.getElementById('abm-pw'); inp.classList.add('error'); setTimeout(()=>inp.classList.remove('error'),500); errEl.textContent='✕ Incorrect password.'; return; }
+  if(!agent){ const inp=document.getElementById('abm-pw'); inp.classList.add('error'); setTimeout(()=>inp.classList.remove('error'),500); errEl.textContent='✕ Enter a valid passcode.'; return; }
   const [sh,sm]=startVal.split(':').map(Number); const start=sh*60+sm, end=start+durMins;
   const alreadyUsed=agentCoffeeTotalMins(agent);
   if(alreadyUsed+durMins>30){ errEl.textContent=`✕ You've used ${alreadyUsed} min. Adding ${durMins} min would exceed the 30-min daily limit.`; return; }
@@ -2352,7 +2359,7 @@ document.getElementById('admin-btn').addEventListener('click',()=>{isAdminNow()?
 document.getElementById('my-break-btn').addEventListener('click',openAgentBreakModal);
 document.getElementById('abm-cancel-btn').addEventListener('click',closeAgentBreakModal);
 document.getElementById('abm-ok-btn').addEventListener('click',confirmAgentBreak);
-document.getElementById('abm-agent').addEventListener('change',updateAbmQuota);
+document.getElementById('abm-pw').addEventListener('input',updateAbmQuota);
 document.getElementById('abm-pw').addEventListener('keydown',e=>{if(e.key==='Enter')confirmAgentBreak();});
 document.getElementById('save-btn').addEventListener('click',saveData);
 document.getElementById('archive-timeline-btn').addEventListener('click',archiveCurrentTimeline);
@@ -2497,8 +2504,8 @@ function maybeClearComfortBreaksAtEOD(){
   if(!DATA.clearComfortBreaksAtEOD) return false;
   const now = new Date();
   const currentDateKey = formatDateKey(now);
-  if(now.getHours() < 23 || (now.getHours() === 23 && now.getMinutes() < 59)) return false;
-  if(DATA.lastEODClearDate === currentDateKey) return false;
+  const lastDateKey = DATA.lastEODClearDate;
+  if(!lastDateKey || lastDateKey === currentDateKey) return false;
   const cleared = clearComfortBreaks();
   if(cleared){ DATA.lastEODClearDate = currentDateKey; }
   return cleared;

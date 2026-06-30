@@ -4,6 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>AFK Manager v2</title>
+<link rel="icon" href="faviconsv2/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="faviconsv2/favicon-32x32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="faviconsv2/favicon-64x64.png" sizes="64x64" type="image/png">
+<link rel="apple-touch-icon" href="faviconsv2/favicon-64x64.png">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 
@@ -121,10 +125,9 @@
 <div class="modal-overlay" id="agent-break-modal">
   <div class="modal" style="width:380px;">
     <h2>☕ Book My Break</h2>
-    <p>Enter your name and password to book a comfort break.</p>
+    <p>Enter your passcode to book a comfort break.</p>
     <div class="abm-info">Max <span>30 min</span> total coffee breaks per day &nbsp;·&nbsp; Max <span>2 agents</span> at the same time</div>
-    <div class="modal-field"><label>Your name</label><select id="abm-agent"></select></div>
-    <div class="modal-field"><label>Your password</label><input type="password" class="lock-input" id="abm-pw" placeholder="Password" style="margin-bottom:0;text-align:left;letter-spacing:normal;"/></div>
+    <div class="modal-field"><label>Passcode</label><input type="password" class="lock-input" id="abm-pw" placeholder="Passcode" style="margin-bottom:0;text-align:left;letter-spacing:normal;"/></div>
     <div class="modal-row" style="margin-top:14px;">
       <div class="modal-field"><label>Start time</label><input type="time" id="abm-start" value="10:00" min="08:00" max="17:30"/></div>
       <div class="modal-field"><label>Duration</label>
