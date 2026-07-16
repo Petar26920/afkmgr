@@ -115,6 +115,8 @@ let _firestoreAvailable = true;
 let _realtimeUnsubscribe = null;
 let shiftManagerViewDate = null;
 let selectedDailyTimelineKey = null;
+let _autoClearingEOD = false;
+let _loginInProgress = false;
 
 function loadShiftManagerViewDate(){
   try{
@@ -300,13 +302,13 @@ function createTimelineArchiveKey(){
   return `${dateKey}_${Date.now()}_${randomId}`;
 }
 
-async function archiveCurrentTimeline(){
-  const el = document.getElementById('last-update');
-  if(!_firestoreAvailable){ if(el) el.textContent='⚠ Offline — timeline not archived'; return; }
-  const dateKey = formatDateKey(new Date());
-  const archiveKey = createTimelineArchiveKey();
-  if(!DATA.dailyTimelines) DATA.dailyTimelines = {};
-  DATA.dailyTimelines[archiveKey] = {
+function getDateKeyFromIso(value){
+  const d = new Date(value);
+  return isNaN(d) ? null : formatDateKey(d);
+}
+
+function buildTimelineArchiveEntry(dateKey){
+  return {
     date: dateKey,
     savedAt: new Date().toISOString(),
     timeline: {
@@ -318,6 +320,15 @@ async function archiveCurrentTimeline(){
       shiftManagerViewDate: shiftManagerViewDate || dateKey
     }
   };
+}
+
+async function archiveCurrentTimeline(){
+  const el = document.getElementById('last-update');
+  if(!_firestoreAvailable){ if(el) el.textContent='⚠ Offline — timeline not archived'; return; }
+  const dateKey = formatDateKey(new Date());
+  const archiveKey = createTimelineArchiveKey();
+  if(!DATA.dailyTimelines) DATA.dailyTimelines = {};
+  DATA.dailyTimelines[archiveKey] = buildTimelineArchiveEntry(dateKey);
   DATA.lastUpdated = new Date().toISOString();
   try {
     await setDoc(DOC_REF, DATA, { merge: true });
@@ -337,18 +348,7 @@ async function saveDailyTimeline(){
   const dateKey = formatDateKey(new Date());
   const archiveKey = createTimelineArchiveKey();
   if(!DATA.dailyTimelines) DATA.dailyTimelines = {};
-  DATA.dailyTimelines[archiveKey] = {
-    date: dateKey,
-    savedAt: new Date().toISOString(),
-    timeline: {
-      coffeeBreaks: JSON.parse(JSON.stringify(DATA.coffeeBreaks || [])),
-      lunchBreaks: JSON.parse(JSON.stringify(DATA.lunchBreaks || [])),
-      triageSlots: JSON.parse(JSON.stringify(DATA.triageSlots || [])),
-      customTasks: JSON.parse(JSON.stringify(DATA.customTasks || [])),
-      onLeave: JSON.parse(JSON.stringify(DATA.onLeave || [])),
-      shiftManagerViewDate: shiftManagerViewDate || dateKey
-    }
-  };
+  DATA.dailyTimelines[archiveKey] = buildTimelineArchiveEntry(dateKey);
   DATA.coffeeBreaks = [];
   DATA.lunchBreaks = [];
   DATA.triageSlots = [];
@@ -430,15 +430,20 @@ async function doAdminLogin(){
   const btn=document.getElementById('lock-unlock-btn');
   if(!email||!pw){ errEl.textContent='Enter email and password.'; return; }
   btn.textContent='Signing in…'; btn.disabled=true; errEl.textContent='';
+  _loginInProgress = true;
   try {
     await signInWithEmailAndPassword(auth,email,pw);
+    applyMode();
+    document.getElementById('lock-screen').style.display='none';
+    _firestoreAvailable = true;
+    await loadData();
   } catch(e){
     const inp=document.getElementById('pw-input');
     inp.classList.add('error'); setTimeout(()=>inp.classList.remove('error'),500);
     if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(e.code)) errEl.textContent='Incorrect email or password.';
     else if(e.code==='auth/too-many-requests') errEl.textContent='Too many attempts. Try again later.';
     else errEl.textContent=e.message;
-  } finally { btn.textContent='Unlock Admin'; btn.disabled=false; }
+  } finally { _loginInProgress = false; btn.textContent='Unlock Admin'; btn.disabled=false; }
 }
 async function lockApp(){ await signOut(auth); applyMode(); render(); }
 function applyMode(){
@@ -1530,6 +1535,14 @@ function confirmAgentBreak(){
   const errEl=document.getElementById('abm-err'); errEl.textContent='';
   if(!agent){ const inp=document.getElementById('abm-pw'); inp.classList.add('error'); setTimeout(()=>inp.classList.remove('error'),500); errEl.textContent='✕ Enter a valid passcode.'; return; }
   const [sh,sm]=startVal.split(':').map(Number); const start=sh*60+sm, end=start+durMins;
+  // Agents may only schedule breaks up to 2 hours in the future. Admins use the Add Break modal.
+  try{
+    const nowDate = new Date();
+    const startDate = new Date(nowDate);
+    startDate.setHours(sh, sm, 0, 0);
+    const diffMs = startDate - nowDate;
+    if(diffMs > 2*60*60*1000){ errEl.textContent = '✕ Agents may only schedule breaks up to 2 hours in the future. Ask admin for later slots.'; return; }
+  }catch(e){ /* ignore date parsing issues */ }
   const alreadyUsed=agentCoffeeTotalMins(agent);
   if(alreadyUsed+durMins>30){ errEl.textContent=`✕ You've used ${alreadyUsed} min. Adding ${durMins} min would exceed the 30-min daily limit.`; return; }
   if(DATA.coffeeBreaks.filter(b=>b.start<end&&b.end>start).length>=2){ errEl.textContent='✕ 2 agents are already on break during that slot.'; return; }
@@ -2492,23 +2505,39 @@ function restoreCardCollapses(){
   });
 }
 
-function clearComfortBreaks(){
+function clearComfortBreaks({ save = true } = {}){
   if(!Array.isArray(DATA.coffeeBreaks) || DATA.coffeeBreaks.length === 0) return false;
   DATA.coffeeBreaks = [];
-  DATA.lastEODClearDate = formatDateKey(new Date());
-  saveData();
+  if(save) saveData();
   return true;
 }
 
-function maybeClearComfortBreaksAtEOD(){
+function shouldAutoClearComfortBreaksAtEOD(now){
   if(!DATA.clearComfortBreaksAtEOD) return false;
-  const now = new Date();
+  if(!Array.isArray(DATA.coffeeBreaks) || DATA.coffeeBreaks.length === 0) return false;
   const currentDateKey = formatDateKey(now);
   const lastDateKey = DATA.lastEODClearDate;
-  if(!lastDateKey || lastDateKey === currentDateKey) return false;
-  const cleared = clearComfortBreaks();
-  if(cleared){ DATA.lastEODClearDate = currentDateKey; }
-  return cleared;
+  if(lastDateKey === currentDateKey) return false;
+  if(lastDateKey && lastDateKey !== currentDateKey) return true;
+  const lastUpdatedKey = getDateKeyFromIso(DATA.lastUpdated);
+  return lastUpdatedKey ? lastUpdatedKey !== currentDateKey : true;
+}
+
+function maybeClearComfortBreaksAtEOD(){
+  if(_autoClearingEOD) return false;
+  const now = new Date();
+  if(!shouldAutoClearComfortBreaksAtEOD(now)) return false;
+  const currentDateKey = formatDateKey(now);
+  if(!DATA.dailyTimelines) DATA.dailyTimelines = {};
+  const archiveKey = createTimelineArchiveKey();
+  DATA.dailyTimelines[archiveKey] = buildTimelineArchiveEntry(currentDateKey);
+  if(clearComfortBreaks({ save: false })){
+    DATA.lastEODClearDate = currentDateKey;
+    _autoClearingEOD = true;
+    saveData().finally(()=>{ _autoClearingEOD = false; });
+    return true;
+  }
+  return false;
 }
 
 function openClearBreaksModal(){
@@ -2588,7 +2617,7 @@ onAuthStateChanged(auth,(user)=>{
   applyMode();
   if(user){
     _firestoreAvailable = true;
-    loadData().catch(e=>console.error('Reload after auth failed:', e));
+    if(!_loginInProgress) loadData().catch(e=>console.error('Reload after auth failed:', e));
   } else {
     detachRealtimeListener();
     render();
