@@ -286,7 +286,18 @@ async function saveData(){
   const el = document.getElementById('last-update');
   if(!_firestoreAvailable){ if(el) el.textContent='⚠ Offline — changes not saved'; return; }
   try {
-    await setDoc(DOC_REF, DATA, { merge: true });
+    if(!isAdminNow()){
+      const allowedUpdate = {};
+      if(Array.isArray(DATA.coffeeBreaks)) allowedUpdate.coffeeBreaks = DATA.coffeeBreaks;
+      if(Array.isArray(DATA.lunchBreaks)) allowedUpdate.lunchBreaks = DATA.lunchBreaks;
+      if(Object.keys(allowedUpdate).length === 0){
+        if(el) el.textContent='⚠ Save failed: admin sign-in required';
+        return;
+      }
+      await updateDoc(DOC_REF, allowedUpdate);
+    } else {
+      await setDoc(DOC_REF, DATA, { merge: true });
+    }
     if(el) el.textContent='Saved · '+new Date().toLocaleTimeString();
     renderLastUpdated();
     setTimeout(setStatusBar, 3000);
