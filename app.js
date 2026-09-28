@@ -18,6 +18,9 @@ const DOC_REF = doc(db,'afk','state');
 function isAdminNow(){ return !!auth.currentUser; }
 function requireAdmin(){ if(!isAdminNow()) throw new Error('Not authenticated as admin'); }
 
+// Expose a global helper for non-module scripts to check admin state
+try{ window.isAdminNow = () => !!auth.currentUser; }catch(e){}
+
 // ─── PANEL DEFS ───
 const BUILTIN_PANELS = [
   { id:'timeline',       label:'Break Timeline',   icon:'📊', defaultSpan:9, defaultHeight:null },
@@ -219,15 +222,8 @@ function formatShiftAgents(agents){
 }
 
 function getScheduleDisplayName(agent, allAgents){
-  const parts = String(agent||'').trim().split(/\s+/).filter(Boolean);
-  if(!parts.length) return agent;
-  const firstName = parts[0];
-  const duplicates = allAgents.filter(a=>String(a||'').trim().split(/\s+/).filter(Boolean)[0] === firstName);
-  if(duplicates.length > 1){
-    const surname = parts.length > 1 ? parts[parts.length-1] : '';
-    return surname ? `${firstName} ${surname[0]}` : firstName;
-  }
-  return firstName;
+  // Show full name in shift manager for clarity. Trim whitespace.
+  return String(agent || '').trim();
 }
 
 function getShiftLabel(id){
@@ -398,13 +394,49 @@ async function saveAgentBreak(){
 
 // ─── LUNCH BREAK SAVE (only writes lunchBreaks field) ───
 async function saveLunchBreak(){
-  if(!_firestoreAvailable) return;
+  if(!_firestoreAvailable) return false;
   try {
     await updateDoc(DOC_REF, { lunchBreaks: DATA.lunchBreaks });
+    return true;
   } catch(e){
     console.error('Lunch break save failed:', e);
+    return false;
   }
 }
+
+window.applyLunchSuggestions = async function(rows){
+  requireAdmin();
+  if(!Array.isArray(rows) || rows.length === 0) throw new Error('No lunch suggestions to apply');
+
+  const previousLunchBreaks = DATA.lunchBreaks;
+  const updatedLunchBreaks = previousLunchBreaks.slice();
+  const toMinutes = value => {
+    const [hours, minutes] = String(value).split(':').map(Number);
+    if(!Number.isInteger(hours) || !Number.isInteger(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59){
+      throw new Error('A lunch suggestion has an invalid time');
+    }
+    return hours * 60 + minutes;
+  };
+  for(const suggestion of rows){
+    const start = toMinutes(suggestion.start);
+    const end = toMinutes(suggestion.end);
+    for(const person of (suggestion.people || [])){
+      const agent = findAgentMatch(person) || person;
+      const exists = updatedLunchBreaks.some(breakItem =>
+        normalizeAgentKey(breakItem.agent) === normalizeAgentKey(agent) &&
+        breakItem.start === start && breakItem.end === end
+      );
+      if(!exists) updatedLunchBreaks.push({agent, start, end});
+    }
+  }
+
+  DATA.lunchBreaks = updatedLunchBreaks;
+  if(!await saveLunchBreak()){
+    DATA.lunchBreaks = previousLunchBreaks;
+    throw new Error('Could not save lunch suggestions. Check the connection and try again.');
+  }
+  render();
+};
 
 // ─── EDIT REQUEST SAVE (only writes editRequests field) ───
 async function saveEditRequests(){
@@ -538,11 +570,15 @@ function buildSavedTimelinePanel(entry){
   const lunchBreaks = Array.isArray(timeline.lunchBreaks) ? timeline.lunchBreaks : [];
   const triageSlots = Array.isArray(timeline.triageSlots) ? timeline.triageSlots : [];
   const customTasks = Array.isArray(timeline.customTasks) ? timeline.customTasks : [];
+  const suggestionsRaw = Array.isArray(window.lastLunchSuggestions) ? window.lastLunchSuggestions : [];
+  const parseClock = t => { if(typeof t==='number') return Math.round(t); const m = String(t).match(/(\d{1,2}):(\d{2})/); return m ? parseInt(m[1],10)*60 + parseInt(m[2],10) : 0 };
+  const suggestions = suggestionsRaw.map(s=>({start: parseClock(s.start), end: parseClock(s.end), people: Array.isArray(s.people)?s.people:[] }));
   const agents=[...new Set([
     ...coffeeBreaks.map(b=>b.agent),
     ...lunchBreaks.map(b=>b.agent),
     ...triageSlots.map(t=>t.agent),
-    ...customTasks.map(t=>t.agent)
+    ...customTasks.map(t=>t.agent),
+    ...((Array.isArray(window.lastLunchSuggestions)?window.lastLunchSuggestions:[]).flatMap(s=>s.people))
   ])];
   const rows = agents.map(ag=>{
     const bbs=[
@@ -553,6 +589,23 @@ function buildSavedTimelinePanel(entry){
         data-type="${b.type}" data-idx="${b.idx}" data-start="${b.start}" data-end="${b.end}"
         data-tip="${fmtM(b.start)}–${fmtM(b.end)} · ${b.type==='coffee'?'☕ Coffee break':'🍕 Lunch break'} · ${b.agent}"
       ></div>`).join('');
+    // suggestion bars for this agent (visual-only)
+    const personMatchesAgent = (person, agentFull) => {
+      if(!person || !agentFull) return false;
+      const p = person.toLowerCase();
+      const a = agentFull.toLowerCase();
+      if(p === a) return true;
+      const aFirst = a.split(' ')[0];
+      if(p === aFirst) return true;
+      // also match if person is included in agent full (e.g. 'ivan' matches 'ivan curcic')
+      if(a.indexOf(p) !== -1) return true;
+      return false;
+    };
+    const suggestBars = suggestions.filter(s=>s.people.some(p=>personMatchesAgent(p,ag))).map((s,si)=>`<div class="tl-bar tl-suggest"
+        style="left:${pct(s.start)}%;width:${pctw(s.end-s.start)}%;background:rgba(0,200,120,0.18);border:1px dashed rgba(0,200,120,0.35);box-sizing:border-box;"
+        data-tip="${fmtM(s.start)}–${fmtM(s.end)} · Suggested lunch · ${ag}"
+      ></div>`).join('');
+    const bbsCombined = bbs + suggestBars;
     const tks = customTasks.filter(t=>t.agent===ag).map(t=>{
       const accent=(ACCENT_COLORS.find(c=>c.key===t.color)||ACCENT_COLORS[0]).val;
       return `<div class="tl-bar tl-custom"
@@ -567,7 +620,7 @@ function buildSavedTimelinePanel(entry){
           data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
         ></div>`;
     }).join('');
-    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
+    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbsCombined}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
   return `<div class="card phone-timeline-panel" style="height:100%;min-height:280px;">
     <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Saved timeline ${entry.date}</div></div>
@@ -654,6 +707,10 @@ function buildTimelinePanel(heightPx){
   const lunchBreaks = Array.isArray(DATA.lunchBreaks) ? DATA.lunchBreaks : [];
   const triageSlots = Array.isArray(DATA.triageSlots) ? DATA.triageSlots : [];
   const customTasks = Array.isArray(DATA.customTasks) ? DATA.customTasks : [];
+  // Temporary suggested lunches (do not mutate DATA) — expected format: [{start:'12:00',end:'12:30',people:[...]}]
+  const suggestionsRaw = Array.isArray(window.lastLunchSuggestions) ? window.lastLunchSuggestions : [];
+  const parseClock = t => { if(typeof t==='number') return Math.round(t); const m = String(t).match(/(\d{1,2}):(\d{2})/); return m ? parseInt(m[1],10)*60 + parseInt(m[2],10) : 0 };
+  const suggestions = suggestionsRaw.map(s=>({start: parseClock(s.start), end: parseClock(s.end), people: Array.isArray(s.people)?s.people:[] }));
   const agents=[...new Set([
     ...coffeeBreaks.map(b=>b.agent),
     ...lunchBreaks.map(b=>b.agent),
@@ -669,6 +726,22 @@ function buildTimelinePanel(heightPx){
         data-type="${b.type}" data-idx="${b.idx}" data-start="${b.start}" data-end="${b.end}"
         data-tip="${fmtM(b.start)}–${fmtM(b.end)} · ${b.type==='coffee'?'☕ Coffee break':'🍕 Lunch break'} · ${b.agent}"
       ></div>`).join('');
+    // append suggestion bars for this agent (visual-only)
+    const personMatchesAgent = (person, agentFull) => {
+      if(!person || !agentFull) return false;
+      const p = person.toLowerCase();
+      const a = agentFull.toLowerCase();
+      if(p === a) return true;
+      const aFirst = a.split(' ')[0];
+      if(p === aFirst) return true;
+      if(a.indexOf(p) !== -1) return true;
+      return false;
+    };
+    const suggestBars = suggestions.filter(s=>s.people.some(p=>personMatchesAgent(p,ag))).map((s,si)=>`<div class="tl-bar tl-suggest"
+        style="left:${pct(s.start)}%;width:${pctw(s.end-s.start)}%;background:rgba(0,200,120,0.18);border:1px dashed rgba(0,200,120,0.35);box-sizing:border-box;"
+        data-tip="${fmtM(s.start)}–${fmtM(s.end)} · Suggested lunch · ${ag}"
+      ></div>`).join('');
+    const bbsCombined = bbs + suggestBars;
     const tks = customTasks.filter(t=>t.agent===ag).map(t=>{
       const accent=(ACCENT_COLORS.find(c=>c.key===t.color)||ACCENT_COLORS[0]).val;
       return `<div class="tl-bar tl-custom"
@@ -683,7 +756,7 @@ function buildTimelinePanel(heightPx){
           data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
         ></div>`;
     }).join('');
-    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbs}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
+    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbsCombined}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
   return `<div class="card phone-timeline-panel" style="height:100%;${hStyle}">
@@ -2633,4 +2706,6 @@ onAuthStateChanged(auth,(user)=>{
     detachRealtimeListener();
     render();
   }
+  // notify UI about auth change so components (eg. Apply button) can update
+  try{ document.dispatchEvent(new CustomEvent('app:auth-changed',{detail:{user, isAdmin: !!auth.currentUser}})); }catch(e){}
 });

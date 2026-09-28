@@ -359,6 +359,10 @@
         <div class="card-header"><div class="card-title"><span class="pip pip-green"></span>Lunch breaks</div><div style="display:flex;gap:6px;"><button class="add-btn" id="add-lunch-btn">+ Add</button><button class="card-collapse-btn" data-collapse="lunch-card" title="Toggle">▶</button></div></div>
         <div id="lunch-list"></div>
       </div>
+          <!-- Lunch suggestions modal trigger -->
+          <div style="position:fixed;right:18px;bottom:18px;z-index:1000;">
+            <button class="add-btn" id="suggest-lunch-btn" style="background:var(--green);border-color:var(--green);color:#000;">Suggest lunches</button>
+          </div>
       <div class="card" style="grid-column:1/-1;">
         <div class="card-header"><div class="card-title"><span class="pip pip-purple"></span>On leave</div><div style="display:flex;gap:6px;"><button class="add-btn" id="add-leave-btn">+ Add</button><button class="card-collapse-btn" data-collapse="leave-card" title="Toggle">▶</button></div></div>
         <div id="leave-list"></div>
@@ -472,6 +476,240 @@
     </div>
   </div>
 </div>
+
+<script>
+// Lunch scheduler: reads today's shifts from the app and suggests 30min slots
+;(function(){
+  function toMin(t){ if(typeof t === 'number') return t; const [h,m]=String(t).split(':').map(Number); return h*60+(m||0) }
+  function toTime(m){ const hh=Math.floor(m/60).toString().padStart(2,'0'); const mm=(m%60).toString().padStart(2,'0'); return hh+':'+mm }
+
+  function formatDateKey(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` }
+
+  function scheduleLunches(shifts, options){
+    const opts=Object.assign({slotDuration:30,maxSimultaneous:3,gapMinutes:10,earliest:'12:00',latest:'17:00'},options||{})
+    const avail=new Map()
+    for(const s of shifts){ if(!s || !s.name) continue; if(!avail.has(s.name)) avail.set(s.name,{start:toMin(s.start),end:toMin(s.end)}) }
+
+    const names=Array.from(avail.keys())
+    const assigned=new Set()
+    const slots=[]
+
+    if(names.length===0) return []
+
+    let earliestAvail = Math.min(...Array.from(avail.values()).map(a=>a.start))
+    let curStart = Math.max(toMin(opts.earliest), earliestAvail)
+    const latestAllowed = toMin(opts.latest)
+
+    while(names.some(n=>!assigned.has(n)) && curStart + opts.slotDuration <= latestAllowed){
+      const slotEnd = curStart + opts.slotDuration
+      const candidates = []
+      for(const name of names){ if(assigned.has(name)) continue; const a=avail.get(name); if(a && a.start<=curStart && a.end>=slotEnd) candidates.push(name); }
+      if(candidates.length === 0){ curStart += 10; continue }
+      const picked = candidates.slice(0, opts.maxSimultaneous)
+      for(const p of picked) assigned.add(p)
+      slots.push({start:curStart, end:slotEnd, people:picked})
+      curStart = slotEnd + opts.gapMinutes
+    }
+
+    // If the last slot has fewer than 2 people, try to rebalance with the previous slot
+    const minGroupSize = 2
+    if(slots.length >= 2){
+      const last = slots[slots.length-1]
+      if(last.people.length < minGroupSize){
+        const prev = slots[slots.length-2]
+        const combined = prev.people.concat(last.people)
+        // Only rebalance when we can make at least two groups of two
+        if(combined.length >= 4){
+          const g1 = combined.slice(0,2)
+          const g2 = combined.slice(2,4)
+          // Replace previous and last with new 2-person groups (keep original times)
+          slots[slots.length-2] = {start: prev.start, end: prev.end, people: g1}
+          slots[slots.length-1] = {start: last.start, end: last.end, people: g2}
+          // Any extras beyond 4 append to the last group
+          const extras = combined.slice(4)
+          if(extras.length) slots[slots.length-1].people = slots[slots.length-1].people.concat(extras)
+        }
+      }
+    }
+
+    return slots.map(s=>({start:toTime(s.start), end:toTime(s.end), people:s.people}))
+  }
+
+  function getShiftsForDate(dateStr){
+    const assignments = (window.DATA && DATA.shiftAssignments) || {};
+    const allShifts = (window.SHIFTS && (SHIFTS.weekday||[]).concat(SHIFTS.weekend||[])) || [];
+    const keys = Object.keys(assignments).filter(k=>k.startsWith(dateStr+':'))
+    const rows = []
+    keys.forEach(k=>{
+      const shiftId = k.split(':')[1]
+      const raw = assignments[k]
+      let assigned = []
+      if(typeof window.parseShiftAgents === 'function') assigned = parseShiftAgents(raw)
+      else if(Array.isArray(raw)) assigned = raw.slice()
+      else if(typeof raw === 'string') assigned = raw.split(/[,;]+/).map(s=>s.trim()).filter(Boolean)
+      if(!assigned.length) return
+      const def = allShifts.find(s=>s.id===shiftId)
+      let start=null,end=null
+      if(def){ start = def.start; end = def.end }
+      else {
+        const m = shiftId.match(/shift-(\d{1,4})-(\d{1,4})/);
+        if(m){ const a=parseInt(m[1],10), b=parseInt(m[2],10); start = a>24? a : a*60; end = b>24? b : b*60 }
+      }
+      if(start===null||end===null) return
+      assigned.forEach(name=> rows.push({name, start: toTime(start), end: toTime(end)}))
+    })
+    // If no assignments found in DATA (e.g. viewing the Shift Manager but not loaded into DATA), try DOM fallback
+    if(rows.length === 0){
+      try{
+        const cards = Array.from(document.querySelectorAll('.shift-manager-card'))
+        cards.forEach(card=>{
+          const titleEl = card.querySelector('.shift-manager-card-title')
+          const agentEls = Array.from(card.querySelectorAll('.shift-manager-agent-pill'))
+          if(!titleEl || !agentEls.length) return
+          const title = titleEl.textContent.trim()
+          // parse time range like 08:00–16:00 or 08:00 - 16:00
+          const m = title.match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);
+          let start='08:00', end='16:00'
+          if(m){ start=m[1]; end=m[2] }
+          agentEls.forEach(ael=>{
+            const name = ael.textContent.trim()
+            if(name) rows.push({name, start, end})
+          })
+        })
+        // also parse single-person shift rows (different DOM structure)
+        const singleRows = Array.from(document.querySelectorAll('.shift-manager-single-row'))
+        singleRows.forEach(row=>{
+          try{
+            const spans = row.querySelectorAll('span')
+            if(!spans || spans.length===0) return
+            const name = spans[0].textContent.trim()
+            let start='12:00', end='20:00'
+            const timeEl = row.querySelector('.shift-manager-single-time')
+            if(timeEl){ const m = timeEl.textContent.match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/); if(m){ start=m[1]; end=m[2] } }
+            if(name) rows.push({name, start, end})
+          }catch(e){}
+        })
+      }catch(e){ /* ignore DOM errors */ }
+    }
+
+    return rows
+  }
+
+  function scheduleLunchesFromApp(opts={}, dateStr){
+    const ds = dateStr || (typeof shiftManagerViewDate !== 'undefined' && shiftManagerViewDate) || formatDateKey(new Date())
+    const shifts = getShiftsForDate(ds)
+    const maxSim = (opts.maxSimultaneous!==undefined)?opts.maxSimultaneous:3
+    const result = scheduleLunches(shifts, Object.assign({slotDuration:30,maxSimultaneous:maxSim,gapMinutes:10,earliest:'12:00',latest:'17:00'}, opts))
+    console.log(`Lunch suggestions for ${ds}:`)
+    if(result.length===0) console.log('  No eligible agents or no shifts for this date.')
+    result.forEach((s,i)=> console.log(`${i+1}. ${s.start} - ${s.end} → ${s.people.join(', ')}`))
+    window.lastLunchSuggestions = result
+    return result
+  }
+
+  window.scheduleLunchesFromApp = scheduleLunchesFromApp
+
+  function refreshLunchSuggestions(){
+    const startInput = document.getElementById('lunch-suggest-start');
+    const body = document.getElementById('lunch-suggest-body');
+    const earliest = startInput && startInput.value;
+    if(!earliest){
+      window.lastLunchSuggestions = [];
+      if(body) body.textContent='Choose a start time first.';
+      return;
+    }
+    const rows = scheduleLunchesFromApp({earliest});
+    if(!body) return;
+    if(!rows.length) body.textContent='No suggestions for selected date and start time.';
+    else body.innerHTML = rows.map((r,i)=>`<div style="margin:6px 0;"><strong>${i+1}. ${r.start} - ${r.end}</strong><div style="margin-top:4px;">${r.people.join(', ')}</div></div>`).join('');
+    try{ render(); }catch(e){}
+  }
+
+  // UI: create a modal to show suggestions
+  function createSuggestionModal(){
+    if(document.getElementById('lunch-suggest-modal')) return;
+    const wrap = document.createElement('div'); wrap.id='lunch-suggest-modal';
+    wrap.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:900;max-width:420px;';
+    wrap.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:12px;box-shadow:0 8px 30px rgba(0,0,0,0.5);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <h3 style="margin:0;font-size:14px;">Suggested lunch slots</h3>
+          <div style="display:flex;gap:8px;align-items:center;"><button id="lunch-suggest-apply" style="display:none;padding:6px 10px;background:var(--green);border-radius:8px;border:none;color:#000;cursor:pointer;font-weight:700;">Apply</button><button id="lunch-suggest-close" style="background:transparent;border:none;color:var(--muted);font-size:16px;cursor:pointer;">✕</button></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--muted);">
+          <label for="lunch-suggest-start">Start no earlier than</label>
+          <input id="lunch-suggest-start" type="time" value="12:00" style="background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:5px 7px;color:var(--text);font:inherit;">
+          <button id="lunch-suggest-refresh" style="padding:5px 8px;background:var(--surface3);border:1px solid var(--border2);border-radius:6px;color:var(--text);cursor:pointer;">Update</button>
+        </div>
+        <div id="lunch-suggest-body" style="min-height:60px;font-family:var(--mono);font-size:13px;color:var(--text);"></div>
+      </div>`;
+    document.body.appendChild(wrap);
+    const closeBtn = document.getElementById('lunch-suggest-close');
+    const applyBtn = document.getElementById('lunch-suggest-apply');
+    document.getElementById('lunch-suggest-refresh').addEventListener('click',refreshLunchSuggestions);
+    document.getElementById('lunch-suggest-close').addEventListener('click',()=>{
+      wrap.style.display='none'; window.lastLunchSuggestions = null; try{ render(); }catch(e){}
+      // remove auth listener if attached
+      try{ const h = wrap._authHandler; if(h) document.removeEventListener('app:auth-changed', h); delete wrap._authHandler; }catch(_){}
+    });
+    // Show apply button only to admins; update visibility when auth state changes
+    try{
+      const updateApplyVisibility = (evt)=>{ try{ const isAdmin = (typeof window.isAdminNow === 'function') ? window.isAdminNow() : (evt && evt.detail && evt.detail.isAdmin); if(isAdmin){ applyBtn.style.display='inline-block'; applyBtn.title='Apply suggestions (admin)'; } else { applyBtn.style.display='none'; applyBtn.title='Admin only'; } }catch(e){} };
+      updateApplyVisibility();
+      wrap._authHandler = updateApplyVisibility;
+      document.addEventListener('app:auth-changed', updateApplyVisibility);
+    }catch(e){}
+    applyBtn.addEventListener('click',async ()=>{
+      const rows = window.lastLunchSuggestions || [];
+      if(!rows.length){ alert('No suggestions to apply'); return; }
+      // build or show confirm modal
+      let confirm = document.getElementById('lunch-apply-confirm-modal');
+      if(!confirm){
+        confirm = document.createElement('div'); confirm.id='lunch-apply-confirm-modal'; confirm.className='modal-overlay';
+        confirm.innerHTML = `
+          <div class="modal" style="width:520px;max-width:95vw;">
+            <h2>Apply suggested lunches?</h2>
+            <p style="font-size:12px;color:var(--muted);">This will add the following lunch breaks to the live timeline. Confirm to apply.</p>
+            <div id="lunch-apply-list" style="max-height:260px;overflow:auto;margin-top:8px;font-family:var(--mono);font-size:13px;color:var(--text);"></div>
+            <div class="modal-actions" style="margin-top:12px;">
+              <button class="modal-cancel" id="lunch-apply-cancel">Cancel</button>
+              <button class="modal-ok" id="lunch-apply-confirm-button" style="background:var(--green);color:#000;">Apply</button>
+            </div>
+          </div>`;
+        document.body.appendChild(confirm);
+        document.getElementById('lunch-apply-cancel').addEventListener('click',()=>{ confirm.classList.remove('open'); });
+        document.getElementById('lunch-apply-confirm-button').addEventListener('click', async ()=>{
+          try{
+            const currentRows = window.lastLunchSuggestions || [];
+            if(!currentRows.length) throw new Error('No suggestions to apply');
+            if(typeof window.applyLunchSuggestions !== 'function') throw new Error('Lunch suggestion service is not ready');
+            await window.applyLunchSuggestions(currentRows);
+            confirm.classList.remove('open'); wrap.style.display='none'; window.lastLunchSuggestions = null;
+          }catch(err){
+            console.error('Applying lunch suggestions failed:', err);
+            alert(err.message || 'Could not apply lunch suggestions.');
+          }
+        });
+      }
+      const listEl = document.getElementById('lunch-apply-list');
+      listEl.innerHTML = rows.map((r,i)=>`<div style="margin:6px 0;"><strong>${i+1}. ${r.start} - ${r.end}</strong><div style="margin-top:4px;">${r.people.join(', ')}</div></div>`).join('');
+      confirm.classList.add('open');
+    });
+    wrap.style.display='none';
+  }
+
+  document.addEventListener('click',e=>{
+    if(e.target && e.target.id==='suggest-lunch-btn'){
+      createSuggestionModal(); const m=document.getElementById('lunch-suggest-modal'); m.style.display='block';
+      refreshLunchSuggestions();
+    }
+  })
+
+  // Auto-run for today's view when DATA is available
+  try{ if(window.DATA) scheduleLunchesFromApp({slotDuration:30,maxSimultaneous:3,gapMinutes:10,earliest:'12:00',latest:'15:00'}); }catch(e){}
+
+})();
+</script>
 
     <script type="module" src="./app.js"></script>
 
