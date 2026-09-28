@@ -178,6 +178,10 @@ function normalizeAgentKey(name){
   return String(name||'').normalize('NFD').replace(/[đĐ]/g,'dj').replace(/[\u0300-\u036f]/g,'').replace(/\./g,'').replace(/\s+/g,' ').trim().toLowerCase();
 }
 
+function toLatinAgentName(name){
+  return String(name||'').replace(/[Đđ]/g,letter=>letter==='Đ'?'Dj':'dj').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+}
+
 function stripMiddleInitials(name){
   const parts = normalizeAgentKey(name).split(' ').filter(Boolean);
   if(parts.length <= 2) return parts.join(' ');
@@ -446,7 +450,7 @@ function buildTriageSuggestions(dateKey){
   const shiftsByAgent = new Map();
   const assignments = DATA.shiftAssignments || {};
   const shiftDefinitions = [...SHIFTS.weekday, ...SHIFTS.weekend];
-  const eligibleRosterKeys = new Set((DATA.agents || []).filter(agentInTriage).map(normalizeAgentKey));
+  const eligibleRosterKeys = new Set((DATA.agents || []).filter(agent=>agentInSchedule(agent) && agentInTriage(agent)).map(normalizeAgentKey));
 
   Object.entries(assignments).forEach(([key, assignedPeople])=>{
     if(!key.startsWith(`${date}:`)) return;
@@ -485,12 +489,13 @@ function buildTriageSuggestions(dateKey){
     const agent = candidates[0];
     previousSlotAgent = agent;
     assignedCount.set(agent, (assignedCount.get(agent)||0)+1);
-    suggestions.push({time:`${pad(Math.floor(start/60))}:00–${pad(Math.floor(end/60))}:00`, agent, start, end});
+    suggestions.push({time:`${pad(Math.floor(start/60))}:00–${pad(Math.floor(end/60))}:00`, agent:toLatinAgentName(agent), start, end});
   }
   return {date, suggestions, unavailable};
 }
 
 window.generateTriageSuggestions = buildTriageSuggestions;
+window.afkManagerTriageVersion = '2026-09-28';
 window.applyTriageSuggestions = async function(dateKey, proposedSlots){
   requireAdmin();
   if(!_firestoreAvailable) throw new Error('Offline — triage suggestions were not saved.');
@@ -1326,7 +1331,7 @@ function renderAgents(){
         <label class="break-vis-toggle"><input type="checkbox" ${visibleSchedule?'checked':''} data-action="agent-schedule-vis" data-agent="${a}" data-idx="${i}" /><span class="break-vis-slider"></span></label>
         <span class="break-vis-label">schedule</span>
       </div>
-      <div class="break-vis-wrap" title="Eligible for triage assignment">
+      <div class="break-vis-wrap" title="Eligible for triage only when both triage and schedule are enabled">
         <label class="break-vis-toggle"><input type="checkbox" ${visibleTriage?'checked':''} data-action="agent-triage-vis" data-agent="${a}" data-idx="${i}" /><span class="break-vis-slider"></span></label>
         <span class="break-vis-label">triage</span>
       </div>

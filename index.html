@@ -627,7 +627,7 @@
 
   function showTriageSuggestions(){
     if(typeof window.generateTriageSuggestions !== 'function'){
-      alert('Triage scheduler is not ready yet. Please try again in a moment.');
+      alert('The AFK Manager module with triage support did not load. Publish the matching afkrestructure/index.html and afkrestructure/app.js files, then reload the page.');
       return;
     }
     const result = window.generateTriageSuggestions();
@@ -668,13 +668,13 @@
     const status = document.getElementById('triage-suggest-status');
     const applyButton = document.getElementById('triage-suggest-apply');
     if(result.unavailable.length){
-      status.textContent = `Cannot create a complete schedule. No rostered, scheduled person is eligible (on shift, no lunch overlap, and not assigned to the immediately previous slot) for: ${result.unavailable.join(', ')}`;
+      status.textContent = `Cannot create a complete schedule. No person with both schedule and triage enabled is eligible (on shift, no lunch overlap, and not assigned to the immediately previous slot) for: ${result.unavailable.join(', ')}`;
       status.style.color = 'var(--red)';
       applyButton.disabled = true;
       applyButton.style.opacity = '.5';
       applyButton.style.cursor = 'not-allowed';
     }else{
-      status.textContent = 'One rostered person per hour, 08:00–18:00. Each person is on shift for the full hour, has no overlapping lunch, and is not assigned to adjacent slots.';
+      status.textContent = 'One person per hour, 08:00–18:00. Both schedule and triage must be enabled; each person must be on shift for the full hour, have no overlapping lunch, and not be assigned to adjacent slots.';
       status.style.color = 'var(--green)';
       applyButton.disabled = false;
       applyButton.style.opacity = '1';
@@ -778,7 +778,7 @@
 })();
 </script>
 
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=triage-eligibility-20260928"></script>
 
 </body>
 </html>
