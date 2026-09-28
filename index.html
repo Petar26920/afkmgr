@@ -383,7 +383,7 @@
         <div id="custom-tasks-list"></div>
       </div>
       <div class="card" style="grid-column:1/-1;">
-        <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div><button class="card-collapse-btn" data-collapse="triage-card" title="Toggle">▶</button></div>
+        <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Triage schedule</div><div style="display:flex;gap:6px;"><button class="add-btn" id="suggest-triage-btn" style="background:var(--blue2);border-color:var(--blue);color:var(--blue);">Suggest triage</button><button class="card-collapse-btn" data-collapse="triage-card" title="Toggle">▶</button></div></div>
         <div class="triage-grid" id="triage-grid"></div>
       </div>
       <div class="card">
@@ -625,6 +625,72 @@
     try{ render(); }catch(e){}
   }
 
+  function showTriageSuggestions(){
+    if(typeof window.generateTriageSuggestions !== 'function'){
+      alert('Triage scheduler is not ready yet. Please try again in a moment.');
+      return;
+    }
+    const result = window.generateTriageSuggestions();
+    window.lastTriageSuggestions = result;
+    let modal = document.getElementById('triage-suggest-modal');
+    if(!modal){
+      modal = document.createElement('div');
+      modal.id = 'triage-suggest-modal';
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `
+        <div class="modal" style="width:520px;max-width:95vw;">
+          <h2>Suggested triage schedule</h2>
+          <p id="triage-suggest-date" style="font-size:12px;color:var(--muted);"></p>
+          <p id="triage-suggest-status" style="font-size:12px;color:var(--muted);"></p>
+          <div id="triage-suggest-list" style="max-height:340px;overflow:auto;margin-top:8px;font-family:var(--mono);font-size:13px;color:var(--text);"></div>
+          <div class="modal-actions" style="margin-top:12px;">
+            <button class="modal-cancel" id="triage-suggest-close">Close</button>
+            <button class="modal-ok" id="triage-suggest-apply" style="background:var(--blue);color:#000;">Apply schedule</button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      document.getElementById('triage-suggest-close').addEventListener('click',()=>modal.classList.remove('open'));
+      document.getElementById('triage-suggest-apply').addEventListener('click',async ()=>{
+        const current = window.lastTriageSuggestions;
+        if(!current || current.unavailable.length) return;
+        try{
+          await window.applyTriageSuggestions(current.date, current.suggestions);
+          modal.classList.remove('open');
+          window.lastTriageSuggestions = null;
+        }catch(error){
+          console.error('Applying triage suggestions failed:', error);
+          alert(error.message || 'Could not apply triage suggestions.');
+        }
+      });
+    }
+
+    document.getElementById('triage-suggest-date').textContent = `Shift assignments for ${result.date}. Applying replaces the current triage schedule.`;
+    const status = document.getElementById('triage-suggest-status');
+    const applyButton = document.getElementById('triage-suggest-apply');
+    if(result.unavailable.length){
+      status.textContent = `Cannot create a complete schedule. No rostered, scheduled person is eligible (on shift, no lunch overlap, and not assigned to the immediately previous slot) for: ${result.unavailable.join(', ')}`;
+      status.style.color = 'var(--red)';
+      applyButton.disabled = true;
+      applyButton.style.opacity = '.5';
+      applyButton.style.cursor = 'not-allowed';
+    }else{
+      status.textContent = 'One rostered person per hour, 08:00–18:00. Each person is on shift for the full hour, has no overlapping lunch, and is not assigned to adjacent slots.';
+      status.style.color = 'var(--green)';
+      applyButton.disabled = false;
+      applyButton.style.opacity = '1';
+      applyButton.style.cursor = 'pointer';
+    }
+    const list = document.getElementById('triage-suggest-list');
+    list.replaceChildren();
+    result.suggestions.forEach(slot=>{
+      const row = document.createElement('div');
+      row.style.margin = '6px 0';
+      row.textContent = `${slot.time}  —  ${slot.agent}`;
+      list.appendChild(row);
+    });
+    modal.classList.add('open');
+  }
+
   // UI: create a modal to show suggestions
   function createSuggestionModal(){
     if(document.getElementById('lunch-suggest-modal')) return;
@@ -699,6 +765,7 @@
   }
 
   document.addEventListener('click',e=>{
+    if(e.target && e.target.id==='suggest-triage-btn') showTriageSuggestions();
     if(e.target && e.target.id==='suggest-lunch-btn'){
       createSuggestionModal(); const m=document.getElementById('lunch-suggest-modal'); m.style.display='block';
       refreshLunchSuggestions();

@@ -69,6 +69,7 @@ const DEFAULT_PHONE_LAYOUT = [
 const DEFAULT_DATA = {
   agents:['Bogdan Repanovic','Danica Pecanac','Ivan Curcic','Sari Abboushi','Luka Martinovic','Aleksa Kostic','Bojan Pavlovic','Stefan Krstic','Luka Jovanovic','Milos Savic','Tamara Trakic','Milica Stepanovic','Dimitrije Milosavljevic','David Kostic','Isidora Stevanovic','Petar Spasic','Radislav Lazarevic'],
   agentBreakVisible:{},
+  agentTriageVisible:{},
   coffeeBreaks:[
     {agent:'Bojan Pavlovic',start:660,end:690},{agent:'Bogdan Repanovic',start:900,end:930},
     {agent:'Aleksa Kostic',start:900,end:930},{agent:'Stefan Krstic',start:930,end:960},
@@ -140,6 +141,7 @@ function normalizeData(d){
   return {
     agents:            Array.isArray(d.agents)            ? d.agents            : DEFAULT_DATA.agents,
     agentBreakVisible: d.agentBreakVisible && typeof d.agentBreakVisible === 'object' ? d.agentBreakVisible : {},
+    agentTriageVisible: d.agentTriageVisible && typeof d.agentTriageVisible === 'object' ? d.agentTriageVisible : {},
     agentScheduleVisible: d.agentScheduleVisible && typeof d.agentScheduleVisible === 'object' ? d.agentScheduleVisible : {},
     coffeeBreaks:      Array.isArray(d.coffeeBreaks)      ? d.coffeeBreaks      : [],
     lunchBreaks:       Array.isArray(d.lunchBreaks)       ? d.lunchBreaks       : [],
@@ -167,6 +169,7 @@ function normalizeData(d){
 
 function agentInBreaks(name){ const v=DATA.agentBreakVisible; return v&&name in v?v[name]:true; }
 function agentInSchedule(name){ const v=DATA.agentScheduleVisible; return v&&name in v?v[name]:true; }
+function agentInTriage(name){ const v=DATA.agentTriageVisible; return v&&name in v?v[name]:agentInSchedule(name); }
 function getViewerLayout(){ return (DATA.viewerLayout&&DATA.viewerLayout.length)?DATA.viewerLayout:DEFAULT_VIEWER_LAYOUT; }
 function getPhoneLayout(){ return (DATA.phoneLayout&&DATA.phoneLayout.length)?DATA.phoneLayout:DEFAULT_PHONE_LAYOUT; }
 function isPhoneSectionVisible(section){ return section.visible !== false && section.visible !== 'false'; }
@@ -434,6 +437,86 @@ window.applyLunchSuggestions = async function(rows){
   if(!await saveLunchBreak()){
     DATA.lunchBreaks = previousLunchBreaks;
     throw new Error('Could not save lunch suggestions. Check the connection and try again.');
+  }
+  render();
+};
+
+function buildTriageSuggestions(dateKey){
+  const date = dateKey || shiftManagerViewDate || formatDateKey(new Date());
+  const shiftsByAgent = new Map();
+  const assignments = DATA.shiftAssignments || {};
+  const shiftDefinitions = [...SHIFTS.weekday, ...SHIFTS.weekend];
+  const eligibleRosterKeys = new Set((DATA.agents || []).filter(agentInTriage).map(normalizeAgentKey));
+
+  Object.entries(assignments).forEach(([key, assignedPeople])=>{
+    if(!key.startsWith(`${date}:`)) return;
+    const shiftId = key.slice(date.length + 1);
+    const shift = shiftDefinitions.find(item => item.id === shiftId);
+    if(!shift) return;
+    let end = shift.end;
+    if(end <= shift.start) end += 1440;
+    parseShiftAgents(assignedPeople).filter(agent=>eligibleRosterKeys.has(normalizeAgentKey(agent))).forEach(agent=>{
+      if(!shiftsByAgent.has(agent)) shiftsByAgent.set(agent, []);
+      shiftsByAgent.get(agent).push({start:shift.start, end});
+    });
+  });
+
+  const assignedCount = new Map();
+  const suggestions = [];
+  const unavailable = [];
+  const lunches = Array.isArray(DATA.lunchBreaks) ? DATA.lunchBreaks : [];
+  let previousSlotAgent = null;
+  for(let start=480; start<1080; start+=60){
+    const end = start + 60;
+    const candidates = [...shiftsByAgent.entries()]
+      .filter(([agent, agentShifts])=>
+        agentShifts.some(shift=>shift.start <= start && shift.end >= end) &&
+        agent !== previousSlotAgent &&
+        !lunches.some(lunch=>normalizeAgentKey(lunch.agent) === normalizeAgentKey(agent) && lunch.start < end && lunch.end > start)
+      )
+      .map(([agent])=>agent)
+      .sort((a,b)=>(assignedCount.get(a)||0)-(assignedCount.get(b)||0) || DATA.agents.indexOf(a)-DATA.agents.indexOf(b));
+
+    if(!candidates.length){
+      unavailable.push(`${pad(Math.floor(start/60))}:00–${pad(Math.floor(end/60))}:00`);
+      previousSlotAgent = null;
+      continue;
+    }
+    const agent = candidates[0];
+    previousSlotAgent = agent;
+    assignedCount.set(agent, (assignedCount.get(agent)||0)+1);
+    suggestions.push({time:`${pad(Math.floor(start/60))}:00–${pad(Math.floor(end/60))}:00`, agent, start, end});
+  }
+  return {date, suggestions, unavailable};
+}
+
+window.generateTriageSuggestions = buildTriageSuggestions;
+window.applyTriageSuggestions = async function(dateKey, proposedSlots){
+  requireAdmin();
+  if(!_firestoreAvailable) throw new Error('Offline — triage suggestions were not saved.');
+  if(!Array.isArray(proposedSlots) || proposedSlots.length !== 10) throw new Error('A complete 08:00–18:00 triage schedule is required.');
+
+  const current = buildTriageSuggestions(dateKey);
+  if(current.unavailable.length) throw new Error(`No eligible rostered agent is on shift without a lunch conflict or adjacent-slot repeat for: ${current.unavailable.join(', ')}`);
+  const validSlots = new Map(current.suggestions.map(slot=>[slot.start, slot]));
+  const slots = proposedSlots.map((slot,index)=>{
+    const expectedStart = 480 + index * 60;
+    const eligible = validSlots.get(expectedStart);
+    if(!eligible || slot.start !== expectedStart || slot.end !== expectedStart + 60 ||
+       normalizeAgentKey(slot.agent) !== normalizeAgentKey(eligible.agent)){
+      throw new Error('Shift or lunch data changed. Generate the triage suggestions again before applying.');
+    }
+    return eligible;
+  });
+
+  const previousSlots = DATA.triageSlots;
+  DATA.triageSlots = slots;
+  try{
+    await updateDoc(DOC_REF, {triageSlots: slots});
+  }catch(error){
+    DATA.triageSlots = previousSlots;
+    console.error('Triage schedule save failed:', error);
+    throw new Error(`Could not save triage suggestions: ${error.message}`);
   }
   render();
 };
@@ -1226,7 +1309,7 @@ function renderAgents(){
   const el=document.getElementById('agents-grid'); if(!el) return;
   const passwords=DATA.agentPasswords||{};
   el.innerHTML=DATA.agents.map((a,i)=>{
-    const pw=passwords[a]||'', visible=agentInBreaks(a), visibleSchedule=agentInSchedule(a);
+    const pw=passwords[a]||'', visible=agentInBreaks(a), visibleSchedule=agentInSchedule(a), visibleTriage=agentInTriage(a);
     return `<div class="agent-item">
       <div class="avatar" style="${avStyle(a)};width:24px;height:24px;font-size:9px;flex-shrink:0;">${initials(a)}</div>
       <span class="agent-item-name">${a}</span>
@@ -1242,6 +1325,10 @@ function renderAgents(){
       <div class="break-vis-wrap" title="Show in shift schedule">
         <label class="break-vis-toggle"><input type="checkbox" ${visibleSchedule?'checked':''} data-action="agent-schedule-vis" data-agent="${a}" data-idx="${i}" /><span class="break-vis-slider"></span></label>
         <span class="break-vis-label">schedule</span>
+      </div>
+      <div class="break-vis-wrap" title="Eligible for triage assignment">
+        <label class="break-vis-toggle"><input type="checkbox" ${visibleTriage?'checked':''} data-action="agent-triage-vis" data-agent="${a}" data-idx="${i}" /><span class="break-vis-slider"></span></label>
+        <span class="break-vis-label">triage</span>
       </div>
       <button class="del-btn" data-action="agent-delete" data-idx="${i}" title="Remove">✕</button>
     </div>`;
@@ -2660,10 +2747,11 @@ document.getElementById('app').addEventListener('change',e=>{
   }else if(act==='break-end'){updateBreakTime(el.dataset.type,idx,'end',el.value);
   }else if(act==='triage-agent'){try{requireAdmin();}catch(e){render();return;}DATA.triageSlots[idx].agent=el.value;renderMetrics();renderViewerGrid();saveData();
   }else if(act==='rule-edit'){try{requireAdmin();}catch(e){render();return;}DATA.rules[idx]=el.value;saveData();
-  }else if(act==='agent-name'){try{requireAdmin();}catch(e){render();return;}const oldName=el.dataset.oldname;DATA.agents[idx]=el.value;if(DATA.agentPasswords&&oldName in DATA.agentPasswords){DATA.agentPasswords[el.value]=DATA.agentPasswords[oldName];delete DATA.agentPasswords[oldName];}if(DATA.agentBreakVisible&&oldName in DATA.agentBreakVisible){DATA.agentBreakVisible[el.value]=DATA.agentBreakVisible[oldName];delete DATA.agentBreakVisible[oldName];}if(DATA.agentScheduleVisible&&oldName in DATA.agentScheduleVisible){DATA.agentScheduleVisible[el.value]=DATA.agentScheduleVisible[oldName];delete DATA.agentScheduleVisible[oldName];}render();saveData();
+  }else if(act==='agent-name'){try{requireAdmin();}catch(e){render();return;}const oldName=el.dataset.oldname;DATA.agents[idx]=el.value;if(DATA.agentPasswords&&oldName in DATA.agentPasswords){DATA.agentPasswords[el.value]=DATA.agentPasswords[oldName];delete DATA.agentPasswords[oldName];}if(DATA.agentBreakVisible&&oldName in DATA.agentBreakVisible){DATA.agentBreakVisible[el.value]=DATA.agentBreakVisible[oldName];delete DATA.agentBreakVisible[oldName];}if(DATA.agentScheduleVisible&&oldName in DATA.agentScheduleVisible){DATA.agentScheduleVisible[el.value]=DATA.agentScheduleVisible[oldName];delete DATA.agentScheduleVisible[oldName];}if(DATA.agentTriageVisible&&oldName in DATA.agentTriageVisible){DATA.agentTriageVisible[el.value]=DATA.agentTriageVisible[oldName];delete DATA.agentTriageVisible[oldName];}render();saveData();
   }else if(act==='agent-pw'){try{requireAdmin();}catch(e){return;}if(!DATA.agentPasswords)DATA.agentPasswords={};DATA.agentPasswords[el.dataset.agent]=el.value;saveData();
   }else if(act==='agent-break-vis'){try{requireAdmin();}catch(e){render();return;}if(!DATA.agentBreakVisible)DATA.agentBreakVisible={};DATA.agentBreakVisible[el.dataset.agent]=el.checked;render();saveData();
   }else if(act==='agent-schedule-vis'){try{requireAdmin();}catch(e){render();return;}if(!DATA.agentScheduleVisible)DATA.agentScheduleVisible={};DATA.agentScheduleVisible[el.dataset.agent]=el.checked;render();saveData();
+  }else if(act==='agent-triage-vis'){try{requireAdmin();}catch(e){render();return;}if(!DATA.agentTriageVisible)DATA.agentTriageVisible={};DATA.agentTriageVisible[el.dataset.agent]=el.checked;render();saveData();
   }else if(act==='clear-eod-toggle'){try{requireAdmin();}catch(e){render();return;}DATA.clearComfortBreaksAtEOD = el.checked; saveData();
   }else if(act==='shift-assign'){try{requireAdmin();}catch(e){render();return;}const key=el.dataset.date+':'+el.dataset.shift;if(!DATA.shiftAssignments)DATA.shiftAssignments={};
       const selected = Array.from(el.selectedOptions||[]).map(opt => opt.value.trim()).filter(Boolean);
