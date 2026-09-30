@@ -181,6 +181,7 @@ function normalizeAgentKey(name){
 function toLatinAgentName(name){
   return String(name||'').replace(/[Đđ]/g,letter=>letter==='Đ'?'Dj':'dj').normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 }
+window.toLatinAgentName = toLatinAgentName;
 
 function stripMiddleInitials(name){
   const parts = normalizeAgentKey(name).split(' ').filter(Boolean);
@@ -708,7 +709,7 @@ function buildSavedTimelinePanel(entry){
           data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
         ></div>`;
     }).join('');
-    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbsCombined}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
+    return `<div class="tl-row"><div class="tl-name">${toLatinAgentName(ag)}</div><div class="tl-track">${bbsCombined}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
   return `<div class="card phone-timeline-panel" style="height:100%;min-height:280px;">
     <div class="card-header"><div class="card-title"><span class="pip pip-blue"></span>Saved timeline ${entry.date}</div></div>
@@ -844,7 +845,7 @@ function buildTimelinePanel(heightPx){
           data-tip="${fmtM(t.start)}–${fmtM(t.end)} · 🔀 Triage · ${t.agent}"
         ></div>`;
     }).join('');
-    return `<div class="tl-row"><div class="tl-name">${ag}</div><div class="tl-track">${bbsCombined}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
+    return `<div class="tl-row"><div class="tl-name">${toLatinAgentName(ag)}</div><div class="tl-track">${bbsCombined}${tks}${tbs}<div class="tl-now" style="left:${np}%"></div></div></div>`;
   }).join('');
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
   return `<div class="card phone-timeline-panel" style="height:100%;${hStyle}">
@@ -1274,7 +1275,7 @@ function renderBreaks(containerId,breaks,type){
     const admin=isAdminNow();
     return `<div class="break-row" data-type="${type}" data-idx="${i}">
       <div class="avatar" style="${avStyle(b.agent)}">${initials(b.agent)}</div>
-      <span class="break-name-display break-name">${b.agent}${b.agentAdded?'<span style="font-size:9px;color:var(--muted);margin-left:4px;">self</span>':''}</span>
+      <span class="break-name-display break-name">${type==='lunch'?toLatinAgentName(b.agent):b.agent}${b.agentAdded?'<span style="font-size:9px;color:var(--muted);margin-left:4px;">self</span>':''}</span>
       <input class="edit-field name-field" value="${b.agent}" data-action="break-name" data-type="${type}" data-idx="${i}" />
       <input class="edit-field" type="time" value="${fmtM(b.start)}" data-action="break-start" data-type="${type}" data-idx="${i}" />
       <input class="edit-field" type="time" value="${fmtM(b.end)}" data-action="break-end" data-type="${type}" data-idx="${i}" />
