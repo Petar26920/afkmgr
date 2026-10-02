@@ -859,32 +859,35 @@ function buildTimelinePanel(heightPx){
 function buildLeavePanelContent(heightPx){
   const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
   const id='leave-inner-'+Date.now();
+  const leaveEntries=getVisibleLeaveEntries();
 
-  if(!DATA.onLeave||!DATA.onLeave.length){
+  if(!leaveEntries.length){
     return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
       <div class="card-header" style="margin-bottom:8px;"><div class="card-title"><span class="pip pip-purple"></span>On leave</div></div>
-      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">—</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">No one on leave</div>
     </div>`;
   }
 
-  const inner = DATA.onLeave.map(l=>`
+  const inner = leaveEntries.map(({leave})=>`
     <div class="leave-entry">
-      <div class="avatar" style="${avStyle(l.agent)};width:28px;height:28px;font-size:10px;flex-shrink:0;">${initials(l.agent)}</div>
+      <div class="avatar" style="${avStyle(leave.agent)};width:28px;height:28px;font-size:10px;flex-shrink:0;">${initials(leave.agent)}</div>
       <div>
-        <div class="leave-entry-name">${shortName(l.agent)}</div>
-        ${l.note?`<div class="leave-entry-note">${l.note}</div>`:''}
+        <div class="leave-entry-name">${shortName(leave.agent)}</div>
+        ${leave.note?`<div class="leave-entry-note">${leave.note}</div>`:''}
+        ${isAdminNow()&&getLeaveDateLabel(leave)?`<div class="leave-entry-note">${getLeaveDateLabel(leave)}</div>`:''}
       </div>
     </div>`).join('');
 
   return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
     <div class="card-header" style="margin-bottom:8px;"><div class="card-title"><span class="pip pip-purple"></span>On leave</div></div>
-    <div id="${id}" style="display:flex;flex-direction:column;gap:6px;flex:1;overflow:hidden;">${inner}</div>
+    <div id="${id}" style="display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;overflow-y:${isAdminNow()?'auto':'hidden'};">${inner}</div>
   </div>
   <script>
   (function(){
     function fit(){
       const wrap = document.getElementById('${id}');
       if(!wrap) return;
+      if(${isAdminNow()}) return;
       wrap.style.fontSize='';
       wrap.querySelectorAll('.leave-entry-name').forEach(el=>el.style.fontSize='');
       wrap.querySelectorAll('.leave-entry-note').forEach(el=>el.style.fontSize='');
@@ -1392,8 +1395,28 @@ function renderRequestPip(){
 
 function renderLeaveList(){
   const el=document.getElementById('leave-list'); if(!el) return;
-  if(!DATA.onLeave||!DATA.onLeave.length){ el.innerHTML='<div class="empty">No one on leave</div>'; return; }
-  el.innerHTML=DATA.onLeave.map((l,i)=>`<div class="break-row"><div class="avatar" style="${avStyle(l.agent)}">${initials(l.agent)}</div><div style="flex:1;"><div class="break-name">${l.agent}</div>${l.note?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${l.note}</div>`:''}</div><button class="del-btn" data-action="leave-delete" data-idx="${i}" title="Remove" style="display:block;">✕</button></div>`).join('');
+  const visibleLeaves=getVisibleLeaveEntries();
+  el.style.maxHeight=isAdminNow()?'320px':'';
+  el.style.overflowY=isAdminNow()?'auto':'';
+  if(!visibleLeaves.length){ el.innerHTML='<div class="empty">No one on leave</div>'; return; }
+  el.innerHTML=visibleLeaves.map(({leave,index})=>`<div class="break-row"><div class="avatar" style="${avStyle(leave.agent)}">${initials(leave.agent)}</div><div style="flex:1;"><div class="break-name">${leave.agent}</div>${leave.note?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${leave.note}</div>`:''}${isAdminNow()&&getLeaveDateLabel(leave)?`<div style="font-size:10px;color:var(--muted);font-family:var(--mono);">${getLeaveDateLabel(leave)}</div>`:''}</div><button class="del-btn" data-action="leave-delete" data-idx="${index}" title="Remove" style="display:block;">✕</button></div>`).join('');
+}
+
+function getVisibleLeaveEntries(){
+  const todayKey=formatDateKey(new Date());
+  const admin=isAdminNow();
+  const entries=(DATA.onLeave||[]).map((leave,index)=>({leave,index})).filter(({leave})=>admin||!leave.startDate||!leave.endDate||(leave.startDate<=todayKey&&todayKey<=leave.endDate));
+  if(admin) entries.sort((a,b)=>(a.leave.startDate||'9999-99-99').localeCompare(b.leave.startDate||'9999-99-99'));
+  return entries;
+}
+
+function getLeaveDateLabel(leave){
+  if(!leave.startDate||!leave.endDate) return '';
+  const format=dateKey=>{
+    const [year,month,day]=dateKey.split('-');
+    return `${Number(month)}/${Number(day)}/${year}`;
+  };
+  return leave.startDate===leave.endDate?format(leave.startDate):`${format(leave.startDate)} – ${format(leave.endDate)}`;
 }
 
 function renderMetrics(){
@@ -1778,7 +1801,7 @@ function confirmExcelImport(){
   closeExcelModal(); render(); saveData();
 }
 
-function openShiftImportModal(){ document.getElementById('shift-import-paste').value=''; document.getElementById('shift-import-preview').textContent=''; document.getElementById('shift-import-modal').classList.add('open'); setTimeout(()=>document.getElementById('shift-import-paste').focus(),100); }
+function openShiftImportModal(){ document.getElementById('shift-import-paste').value=''; document.getElementById('shift-import-preview').textContent=''; document.getElementById('time-off-import-paste').value=''; document.getElementById('time-off-import-preview').textContent=''; document.getElementById('shift-import-modal').classList.add('open'); setTimeout(()=>document.getElementById('shift-import-paste').focus(),100); }
 function closeShiftImportModal(){ document.getElementById('shift-import-modal').classList.remove('open'); }
 function previewShiftImport(){
   const raw=document.getElementById('shift-import-paste').value.trim(); if(!raw){document.getElementById('shift-import-preview').textContent='';return;}
@@ -1791,6 +1814,79 @@ function previewShiftImport(){
   if(agents.size) parts.push(agents.size+' people');
   if(errors.length) parts.push('⚠ '+errors.length+' skipped');
   prev.textContent='✓ '+parts.join(' · ');
+}
+function parseTimeOffImportRaw(raw){
+  const errors=[];
+  const lines=raw.split(/\r?\n/).map(line=>line.replace(/\r/g,'')).filter(line=>line.trim());
+  if(lines.length<2) return {entries:[],errors:['Not enough rows.']};
+  const separator=lines[0].includes('\t')?'\t':',';
+  const splitRow=row=>row.split(separator).map(cell=>cell.replace(/^"|"$/g,'').trim());
+  const headers=splitRow(lines[0]).map(header=>header.toLowerCase().replace(/\s+/g,' '));
+  const memberIdx=headers.findIndex(header=>/\b(member|name|user|person)\b/.test(header));
+  const reasonIdx=headers.findIndex(header=>/\b(time off reason|leave reason|reason)\b/.test(header));
+  const startDateIdx=headers.findIndex(header=>/^start date$/.test(header));
+  const endDateIdx=headers.findIndex(header=>/^end date$/.test(header));
+  const endTimeIdx=headers.findIndex(header=>/^end time$/.test(header));
+  if(memberIdx<0||reasonIdx<0||startDateIdx<0||endDateIdx<0) return {entries:[],errors:['Could not find Member, Start Date, End Date, and Time Off Reason columns.']};
+  const parseDateKey=value=>{
+    const text=String(value||'').trim();
+    let match=text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    let year,month,day;
+    if(match){[,year,month,day]=match.map(Number);}
+    else{
+      match=text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+      if(!match) return null;
+      let first=Number(match[1]),second=Number(match[2]);
+      year=Number(match[3]); if(year<100) year+=2000;
+      if(first>12){day=first;month=second;}else{month=first;day=second;}
+    }
+    const date=new Date(Date.UTC(year,month-1,day));
+    if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day) return null;
+    return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  };
+  const addDays=(dateKey,days)=>{
+    const date=new Date(`${dateKey}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate()+days);
+    return date.toISOString().slice(0,10);
+  };
+  const grouped=new Map();
+  for(let i=1;i<lines.length;i++){
+    const row=splitRow(lines[i]);
+    const sourceName=row[memberIdx]||'';
+    const reason=row[reasonIdx]||'';
+    if(!sourceName||!reason){errors.push(`Row ${i+1}: missing member or time-off reason`);continue;}
+    const startDate=parseDateKey(row[startDateIdx]);
+    let endDate=parseDateKey(row[endDateIdx]);
+    if(!startDate||!endDate||endDate<startDate){errors.push(`Row ${i+1}: invalid leave date range`);continue;}
+    if(endTimeIdx>=0&&endDate>startDate&&/^00?:00$/.test(row[endTimeIdx]||'')) endDate=addDays(endDate,-1);
+    const agent=findAgentMatch(sourceName);
+    const key=`${normalizeAgentKey(agent)}|${reason.toLowerCase()}`;
+    if(!normalizeAgentKey(agent)){errors.push(`Row ${i+1}: invalid member`);continue;}
+    if(!grouped.has(key)) grouped.set(key,{agent,note:reason,ranges:[]});
+    grouped.get(key).ranges.push({startDate,endDate});
+  }
+  const entries=[];
+  grouped.forEach(item=>{
+    item.ranges.sort((a,b)=>a.startDate.localeCompare(b.startDate));
+    const merged=[];
+    item.ranges.forEach(range=>{
+      const previous=merged[merged.length-1];
+      if(previous&&range.startDate<=addDays(previous.endDate,1)) previous.endDate=range.endDate>previous.endDate?range.endDate:previous.endDate;
+      else merged.push({...range});
+    });
+    merged.forEach(range=>entries.push({agent:item.agent,note:item.note,startDate:range.startDate,endDate:range.endDate}));
+  });
+  return {entries,errors};
+}
+function previewTimeOffImport(){
+  const raw=document.getElementById('time-off-import-paste').value.trim();
+  const preview=document.getElementById('time-off-import-preview');
+  if(!raw){preview.textContent='';return;}
+  const {entries,errors}=parseTimeOffImportRaw(raw);
+  if(!entries.length){preview.style.color='var(--red)';preview.textContent='⚠ '+(errors[0]||'No time off detected.');return;}
+  preview.style.color='var(--green)';
+  const people=new Set(entries.map(entry=>normalizeAgentKey(entry.agent))).size;
+  preview.textContent='✓ '+people+' people · '+entries.length+' leave periods'+(errors.length?' · ⚠ '+errors.length+' skipped':'');
 }
 function parseShiftImportRaw(raw){
   const errors=[];
@@ -1913,6 +2009,19 @@ function confirmShiftImport(){
     DATA.patchingAgent = patchingAgent;
   }
   closeShiftImportModal(); render(); saveData();
+}
+function confirmTimeOffImport(){
+  try{requireAdmin();}catch(e){return;}
+  const raw=document.getElementById('time-off-import-paste').value.trim();
+  if(!raw){alert('Paste time-off data first.');return;}
+  const {entries,errors}=parseTimeOffImportRaw(raw);
+  if(!entries.length){alert(errors.length?errors[0]:'No time off detected.');return;}
+  const importedAgents=new Set(entries.map(entry=>normalizeAgentKey(entry.agent)));
+  DATA.onLeave=(DATA.onLeave||[]).filter(entry=>!importedAgents.has(normalizeAgentKey(entry.agent))).concat(entries);
+  document.getElementById('time-off-import-paste').value='';
+  document.getElementById('time-off-import-preview').textContent='';
+  render(); saveData();
+  if(!document.getElementById('shift-import-paste').value.trim()) closeShiftImportModal();
 }
 
 // ─── ADD BREAK MODAL ───
@@ -2639,6 +2748,10 @@ document.getElementById('shift-import-ok-btn').addEventListener('click',confirmS
 document.getElementById('shift-import-paste').addEventListener('input',previewShiftImport);
 document.getElementById('shift-import-paste').addEventListener('focus',function(){this.style.borderColor='var(--blue)';});
 document.getElementById('shift-import-paste').addEventListener('blur',function(){this.style.borderColor='var(--border2)';});
+document.getElementById('time-off-import-ok-btn').addEventListener('click',confirmTimeOffImport);
+document.getElementById('time-off-import-paste').addEventListener('input',previewTimeOffImport);
+document.getElementById('time-off-import-paste').addEventListener('focus',function(){this.style.borderColor='var(--purple)';});
+document.getElementById('time-off-import-paste').addEventListener('blur',function(){this.style.borderColor='var(--border2)';});
 document.getElementById('add-agent-btn').addEventListener('click',addAgent);
 document.getElementById('patch-input').addEventListener('input',function(){if(!isAdminNow())return;DATA.patchingAgent=this.value;renderMetrics();saveData();});
 document.getElementById('add-leave-btn').addEventListener('click',openLeaveModal);

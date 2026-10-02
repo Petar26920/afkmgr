@@ -101,7 +101,7 @@
 
 <!-- MS SHIFTS IMPORT MODAL -->
 <div class="modal-overlay" id="shift-import-modal">
-  <div class="modal" style="width:560px;max-width:95vw;">
+  <div class="modal" style="width:560px;max-width:95vw;max-height:95vh;overflow-y:auto;">
     <h2>📋 Import Shifts from MS Shifts</h2>
     <p style="margin-bottom:8px;">Paste the schedule export from Microsoft Shifts. Expected columns include <span style="font-family:var(--mono);color:var(--amber)">Date · Start · End · Assigned To</span>.</p>
     <p style="font-size:11px;color:var(--muted);margin-bottom:14px;">The first row is treated as a header and skipped. Multiple agents in one shift may be separated by commas, semicolons, or copied into separate columns.</p>
@@ -112,10 +112,15 @@
         <label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;"><input type="radio" name="shift-import-mode" value="merge"> Merge with existing</label>
       </div>
     </div>
-    <textarea id="shift-import-paste" placeholder="Paste MS Shifts data here (Ctrl+V)…" style="width:100%;height:220px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>
+    <label for="shift-import-paste" style="font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.04em;text-transform:uppercase;display:block;margin-bottom:5px;">Shifts</label>
+    <textarea id="shift-import-paste" placeholder="Paste MS Shifts data here (Ctrl+V)…" style="width:100%;height:160px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>
     <div id="shift-import-preview" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono);min-height:18px;"></div>
+    <label for="time-off-import-paste" style="font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:0.04em;text-transform:uppercase;display:block;margin:12px 0 5px;">Time off</label>
+    <textarea id="time-off-import-paste" placeholder="Paste time-off data here (Member, Time Off Reason)…" style="width:100%;height:120px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:10px 12px;color:var(--text);font-family:var(--mono);font-size:12px;resize:vertical;outline:none;line-height:1.6;"></textarea>
+    <div id="time-off-import-preview" style="margin-top:10px;font-size:11px;color:var(--muted);font-family:var(--mono);min-height:18px;"></div>
     <div class="modal-actions">
       <button class="modal-cancel" id="shift-import-cancel-btn">Cancel</button>
+      <button class="modal-ok" id="time-off-import-ok-btn" style="background:var(--purple);">Import time off</button>
       <button class="modal-ok" id="shift-import-ok-btn" style="background:var(--green);color:#000;">✓ Import shifts</button>
     </div>
   </div>
