@@ -1908,6 +1908,7 @@ function parseShiftImportRaw(raw){
   const memberIdx = normalizedHeader.findIndex(h=>/\b(member|user|name)\b/.test(h));
   const emailIdx = normalizedHeader.findIndex(h=>/\b(work email|email|e-mail)\b/.test(h));
   const customLabelIdx = normalizedHeader.findIndex(h=>/\b(custom label|label)\b/.test(h));
+  const notesIdx = normalizedHeader.findIndex(h=>/\bnotes?\b/.test(h));
   const excludedCols = new Set([dateIdx, startIdx, endIdx, startDateIdx, endDateIdx, startTimeIdx, endTimeIdx, shiftIdx].filter(i=>i>=0));
   const assignmentCols = normalizedHeader.map((h,i)=>({h,i})).filter(col=>/\b(assigned to|assigned|user|person|member|name|team|resource|worker)\b/.test(col.h) && !excludedCols.has(col.i)).map(col=>col.i);
   const fallbackAgentCols = normalizedHeader.map((h,i)=>({h,i})).filter(col=>!excludedCols.has(col.i) && col.h.length).map(col=>col.i);
@@ -1952,13 +1953,15 @@ function parseShiftImportRaw(raw){
   const parseAgentList = cell => String(cell||'').split(/[,;]\s*/).map(v=>v.trim()).filter(Boolean);
   const assignments = {};
   const importedAgents = new Set();
-  let detectedPatchingAgent = null;
+  const patchingAgentCounts = new Map();
   for(let i=1;i<lines.length;i++){
     const row = splitRow(lines[i],sep);
-    if(customLabelIdx >= 0 && row[customLabelIdx] && /patching/i.test(row[customLabelIdx])){
+    const hasPatchingMarker = [notesIdx,customLabelIdx].some(idx=>idx>=0&&/patching/i.test(row[idx]||''));
+    if(hasPatchingMarker){
       const agentName = parseAgentList(row[memberIdx])[0] || parseAgentList(row[emailIdx])[0];
-      if(agentName && !detectedPatchingAgent){
-        detectedPatchingAgent = findAgentMatch(agentName);
+      if(agentName){
+        const agent = findAgentMatch(agentName);
+        patchingAgentCounts.set(agent,(patchingAgentCounts.get(agent)||0)+1);
       }
     }
     const dateCell = startDateIdx >= 0 ? row[startDateIdx] : dateIdx >= 0 ? row[dateIdx] : row[0];
@@ -1985,7 +1988,8 @@ function parseShiftImportRaw(raw){
     const existing = assignments[key] || [];
     assignments[key] = Array.from(new Set([...existing, ...normalized]));
   }
-  return {assignments, agents: importedAgents, patchingAgent: detectedPatchingAgent, errors};
+  const patchingAgent = Array.from(patchingAgentCounts).sort((a,b)=>b[1]-a[1])[0]?.[0] || null;
+  return {assignments, agents: importedAgents, patchingAgent, errors};
 }
 function confirmShiftImport(){
   try{requireAdmin();}catch(e){return;}
@@ -2153,6 +2157,7 @@ function confirmBreakRequest(){
     id:'req:'+Date.now()+Math.random().toString(36).slice(2,8),
     agent:_breakRequestTarget.agent,
     type:_breakRequestTarget.type,
+    idx:_breakRequestTarget.idx,
     originalStart:_breakRequestTarget.originalStart,
     originalEnd:_breakRequestTarget.originalEnd,
     requestedStart,
@@ -2717,23 +2722,43 @@ document.getElementById('custom-tasks-list').addEventListener('click',e=>{
   else if(act==='task-edit'){ try{requireAdmin();}catch(e){return;} const t=DATA.customTasks[idx]; if(!t) return; _editingTaskIndex=idx; document.getElementById('task-agent').value=t.agent; document.getElementById('task-title').value=t.title; document.getElementById('task-start').value=pad(Math.floor(t.start/60))+':'+pad(t.start%60); document.getElementById('task-end').value=pad(Math.floor(t.end/60))+':'+pad(t.end%60); _taskSelectedColor=t.color||'purple'; populateTaskColorSwatches(); document.getElementById('task-modal').classList.add('open'); }
 });
 
-document.getElementById('break-requests-list').addEventListener('click',e=>{
+document.getElementById('break-requests-list').addEventListener('click',async e=>{
   const btn=e.target.closest('[data-action]'); if(!btn) return; const action=btn.dataset.action; const id=btn.dataset.id;
   try{requireAdmin();}catch(e){return;}
   const idx=DATA.editRequests.findIndex(r=>r.id===id); if(idx<0) return;
+  if(action!=='request-approve'&&action!=='request-decline') return;
+  const req=DATA.editRequests[idx];
+  const previousRequests=DATA.editRequests.slice();
+  let breaks=null, breakIndex=-1, previousBreak=null;
   if(action==='request-approve'){
-    const req=DATA.editRequests[idx];
-    const breaks = req.type==='coffee'?DATA.coffeeBreaks:DATA.lunchBreaks;
-    const bidx = breaks.findIndex(b=>b.agent===req.agent&&b.start===req.originalStart&&b.end===req.originalEnd);
-    if(bidx>=0){ breaks[bidx].start=req.requestedStart; breaks[bidx].end=req.requestedEnd; }
-    DATA.editRequests.splice(idx,1);
-    render(); 
-    saveEditRequests();
-    if(req.type==='coffee') saveAgentBreak();
-    else saveLunchBreak();
-  } else if(action==='request-decline'){
-    DATA.editRequests.splice(idx,1);
-    render(); saveEditRequests();
+    if(req.type!=='coffee'&&req.type!=='lunch') return;
+    breaks=req.type==='coffee'?DATA.coffeeBreaks:DATA.lunchBreaks;
+    const requestedIndex=Number.isInteger(req.idx)?req.idx:-1;
+    if(requestedIndex>=0&&requestedIndex<breaks.length){
+      const candidate=breaks[requestedIndex];
+      if(candidate.agent===req.agent&&candidate.start===req.originalStart&&candidate.end===req.originalEnd) breakIndex=requestedIndex;
+    }
+    if(breakIndex<0) breakIndex=breaks.findIndex(b=>b.agent===req.agent&&b.start===req.originalStart&&b.end===req.originalEnd);
+    if(breakIndex<0){ alert('Could not find the original break. The request remains pending.'); return; }
+    previousBreak={...breaks[breakIndex]};
+    breaks[breakIndex].start=req.requestedStart;
+    breaks[breakIndex].end=req.requestedEnd;
+  }
+  DATA.editRequests.splice(idx,1);
+  render();
+  try{
+    if(!_firestoreAvailable) throw new Error('Offline; changes were not saved.');
+    const update={editRequests:DATA.editRequests};
+    if(action==='request-approve') update[req.type==='coffee'?'coffeeBreaks':'lunchBreaks']=breaks;
+    await updateDoc(DOC_REF,update);
+    const status=document.getElementById('last-update');
+    if(status) status.textContent='Saved · '+new Date().toLocaleTimeString();
+  }catch(error){
+    DATA.editRequests=previousRequests;
+    if(previousBreak) Object.assign(breaks[breakIndex],previousBreak);
+    render();
+    console.error('Break request update failed:',error);
+    alert('Could not save the break request: '+error.message);
   }
 });
 document.getElementById('modal-cancel-btn').addEventListener('click',closeModal);
