@@ -29,6 +29,7 @@ const BUILTIN_PANELS = [
   { id:'patching-v',     label:'Patching Agent',   icon:'🔧', defaultSpan:5, defaultHeight:null },
   { id:'top-performers', label:'Top Performers',   icon:'🏆', defaultSpan:4, defaultHeight:null },
   { id:'shift-manager',  label:'Shift Manager',    icon:'🔄', defaultSpan:12, defaultHeight:null },
+  { id:'lunch-swap-requests', label:'Lunch Swap Requests', icon:'🔁', defaultSpan:12, defaultHeight:null },
 ];
 
 const SHIFTS = {
@@ -56,6 +57,7 @@ const DEFAULT_VIEWER_LAYOUT = [
   { panels:[{id:'timeline',span:9,visible:true},{id:'leave-panel',span:3,visible:true}] },
   { panels:[{id:'triage-strip',span:7,visible:true},{id:'patching-v',span:5,visible:true}] },
   { panels:[{id:'shift-manager',span:12,visible:true}] },
+  { panels:[{id:'lunch-swap-requests',span:12,visible:true}] },
 ];
 
 const DEFAULT_PHONE_LAYOUT = [
@@ -101,10 +103,12 @@ const DEFAULT_DATA = {
   shiftAssignments: {},
   shiftManagerViewDate: null,
   viewerLayout: DEFAULT_VIEWER_LAYOUT,
+  viewerLayoutPanelMigration: true,
   phoneLayout: DEFAULT_PHONE_LAYOUT,
   customPanels: {},
   customTasks: [],
   editRequests: [],
+  lunchSwapRequests: [],
   topPerformers: {},
   dailyTimelines: {},
   lastUpdated: null,
@@ -138,6 +142,10 @@ function setShiftManagerViewDate(dateStr){
 loadShiftManagerViewDate();
 
 function normalizeData(d){
+  let viewerLayout = Array.isArray(d.viewerLayout) && d.viewerLayout.length ? d.viewerLayout : DEFAULT_VIEWER_LAYOUT;
+  if(d.viewerLayoutPanelMigration !== true && !viewerLayout.some(row=>row.panels?.some(panel=>panel.id==='lunch-swap-requests'))){
+    viewerLayout = [...viewerLayout, {panels:[{id:'lunch-swap-requests',span:12,visible:true}]}];
+  }
   return {
     agents:            Array.isArray(d.agents)            ? d.agents            : DEFAULT_DATA.agents,
     agentBreakVisible: d.agentBreakVisible && typeof d.agentBreakVisible === 'object' ? d.agentBreakVisible : {},
@@ -153,10 +161,12 @@ function normalizeData(d){
     onLeave:           Array.isArray(d.onLeave)           ? d.onLeave           : [],
     shiftAssignments:  d.shiftAssignments && typeof d.shiftAssignments === 'object' ? d.shiftAssignments : {},
     shiftManagerViewDate: typeof d.shiftManagerViewDate === 'string' ? d.shiftManagerViewDate : null,
-    viewerLayout:      Array.isArray(d.viewerLayout) && d.viewerLayout.length ? d.viewerLayout : DEFAULT_VIEWER_LAYOUT,
+    viewerLayout,
+    viewerLayoutPanelMigration: true,
     customPanels:      d.customPanels && typeof d.customPanels === 'object' ? d.customPanels : {},
     customTasks:       Array.isArray(d.customTasks)       ? d.customTasks       : [],
     editRequests:      Array.isArray(d.editRequests)      ? d.editRequests      : [],
+    lunchSwapRequests: Array.isArray(d.lunchSwapRequests) ? d.lunchSwapRequests : [],
     topPerformers:     d.topPerformers && typeof d.topPerformers === 'object' ? d.topPerformers : {},
     dailyTimelines:    d.dailyTimelines && typeof d.dailyTimelines === 'object' ? d.dailyTimelines : {},
     phoneLayout:       Array.isArray(d.phoneLayout) && d.phoneLayout.length ? d.phoneLayout : DEFAULT_PHONE_LAYOUT,
@@ -409,6 +419,17 @@ async function saveLunchBreak(){
   } catch(e){
     console.error('Lunch break save failed:', e);
     return false;
+  }
+}
+
+async function saveLunchSwapRequests(){
+  if(!_firestoreAvailable) return {ok:false,message:'Offline'};
+  try{
+    await updateDoc(DOC_REF, {lunchSwapRequests: DATA.lunchSwapRequests});
+    return {ok:true};
+  }catch(error){
+    console.error('Lunch swap request save failed:', error);
+    return {ok:false,error};
   }
 }
 
@@ -1222,6 +1243,7 @@ function buildPanelContent(panelId, heightPx){
     case 'patching-v':     return buildPatchingViewerContent(heightPx);
     case 'top-performers': return buildTopPerformersContent(heightPx);
     case 'shift-manager':  return buildShiftManagerContent(heightPx);
+    case 'lunch-swap-requests': return buildLunchSwapRequestsPanel(heightPx);
     default: return `<div class="card"><div class="card-title">${panelId}</div></div>`;
   }
 }
@@ -1386,9 +1408,27 @@ function renderBreakRequests(){
   }).join('');
 }
 
+function buildLunchSwapRequestsPanel(heightPx){
+  const requests=DATA.lunchSwapRequests||[];
+  const hStyle=heightPx?`height:${heightPx}px;overflow:hidden;`:'';
+  const rows=requests.length?requests.map(req=>`<div class="break-row">
+    <div class="avatar" style="${avStyle(req.requester)}">${initials(req.requester)}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;">${req.requester} ↔ ${req.targetAgent}</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">${fmtM(req.requesterStart)}–${fmtM(req.requesterEnd)} ↔ ${fmtM(req.targetStart)}–${fmtM(req.targetEnd)}</div>
+      <div style="font-size:10px;color:var(--muted2);margin-top:3px;">Waiting for ${req.targetAgent}</div>
+    </div>
+    <button class="swap-approve-btn" data-action="lunch-swap-approve" data-id="${req.id}" title="Approve or decline with your passcode">Review</button>
+  </div>`).join(''):'<div class="empty">No pending lunch swaps</div>';
+  return `<div class="card" style="height:100%;display:flex;flex-direction:column;${hStyle}">
+    <div class="card-header"><div class="card-title"><span class="pip pip-green"></span>Lunch swap requests</div></div>
+    <div id="lunch-swap-requests" style="min-height:0;overflow-y:auto;">${rows}</div>
+  </div>`;
+}
+
 function renderRequestPip(){
   const el=document.getElementById('request-pip'); if(!el) return;
-  const count=(DATA.editRequests||[]).length;
+  const count=(DATA.editRequests||[]).length+(DATA.lunchSwapRequests||[]).length;
   if(count>0){ el.style.display='inline-flex'; el.textContent=count; }
   else { el.style.display='none'; }
 }
@@ -1749,6 +1789,118 @@ function confirmAgentBreak(){
   if(DATA.coffeeBreaks.find(b=>b.agent===agent&&b.start<end&&b.end>start)){ errEl.textContent='✕ You already have a break overlapping this time slot.'; return; }
   DATA.coffeeBreaks.push({agent,start,end,agentAdded:true}); DATA.coffeeBreaks.sort((a,b)=>a.start-b.start);
   closeAgentBreakModal(); render(); saveAgentBreak();
+}
+
+// ─── LUNCH SWAP REQUESTS ───
+let _lunchSwapApprovalId=null;
+function openLunchSwapModal(){
+  document.getElementById('lsw-requester-pw').value='';
+  document.getElementById('lsw-requester-err').textContent='';
+  document.getElementById('lsw-my-lunch').innerHTML='<option value="">Enter your passcode first</option>';
+  document.getElementById('lsw-target-agent').innerHTML='<option value="">Select a colleague</option>';
+  document.getElementById('lsw-target-lunch').innerHTML='<option value="">Select a colleague first</option>';
+  document.getElementById('lunch-swap-modal').classList.add('open');
+}
+function closeLunchSwapModal(){ document.getElementById('lunch-swap-modal').classList.remove('open'); }
+function updateLunchSwapOptions(){
+  const requester=resolveAgentFromPasscode(document.getElementById('lsw-requester-pw').value);
+  const ownSelect=document.getElementById('lsw-my-lunch');
+  const targetSelect=document.getElementById('lsw-target-agent');
+  const previousOwn=ownSelect.value, previousTarget=targetSelect.value;
+  const ownLunches=(DATA.lunchBreaks||[]).map((item,index)=>({item,index})).filter(({item})=>normalizeAgentKey(item.agent)===normalizeAgentKey(requester||''));
+  ownSelect.innerHTML=requester&&ownLunches.length
+    ? ownLunches.map(({item,index})=>`<option value="${index}">${fmtM(item.start)}–${fmtM(item.end)}</option>`).join('')
+    : '<option value="">'+(requester?'No lunch scheduled':'Enter a valid passcode')+'</option>';
+  if(ownLunches.some(({index})=>String(index)===previousOwn)) ownSelect.value=previousOwn;
+  const targets=[...new Set((DATA.lunchBreaks||[]).map(item=>item.agent).filter(agent=>normalizeAgentKey(agent)!==normalizeAgentKey(requester||'')))];
+  targetSelect.innerHTML='<option value="">Select a colleague</option>'+targets.map(agent=>`<option value="${agent}">${agent}</option>`).join('');
+  if(targets.includes(previousTarget)) targetSelect.value=previousTarget;
+  updateLunchSwapTargetSlots();
+}
+function updateLunchSwapTargetSlots(){
+  const agent=document.getElementById('lsw-target-agent').value;
+  const select=document.getElementById('lsw-target-lunch');
+  const previous=select.value;
+  const slots=(DATA.lunchBreaks||[]).map((item,index)=>({item,index})).filter(({item})=>normalizeAgentKey(item.agent)===normalizeAgentKey(agent));
+  select.innerHTML=slots.length?slots.map(({item,index})=>`<option value="${index}">${fmtM(item.start)}–${fmtM(item.end)}</option>`).join(''):'<option value="">Select a colleague first</option>';
+  if(slots.some(({index})=>String(index)===previous)) select.value=previous;
+}
+async function submitLunchSwapRequest(){
+  const errEl=document.getElementById('lsw-requester-err'); errEl.textContent='';
+  const requester=resolveAgentFromPasscode(document.getElementById('lsw-requester-pw').value);
+  if(!requester){ errEl.textContent='Enter a valid passcode.'; return; }
+  const requesterIndex=Number(document.getElementById('lsw-my-lunch').value);
+  const targetIndex=Number(document.getElementById('lsw-target-lunch').value);
+  const requesterBreak=DATA.lunchBreaks[requesterIndex];
+  const targetBreak=DATA.lunchBreaks[targetIndex];
+  if(!requesterBreak||!targetBreak||normalizeAgentKey(requesterBreak.agent)!==normalizeAgentKey(requester)||normalizeAgentKey(targetBreak.agent)===normalizeAgentKey(requester)){
+    errEl.textContent='Choose one of your lunches and a colleague’s lunch.'; return;
+  }
+  const slotIsPending=(agent,start,end)=> (DATA.lunchSwapRequests||[]).some(req=>
+    (normalizeAgentKey(req.requester)===normalizeAgentKey(agent)&&req.requesterStart===start&&req.requesterEnd===end)||
+    (normalizeAgentKey(req.targetAgent)===normalizeAgentKey(agent)&&req.targetStart===start&&req.targetEnd===end));
+  const duplicate=slotIsPending(requester,requesterBreak.start,requesterBreak.end)||slotIsPending(targetBreak.agent,targetBreak.start,targetBreak.end);
+  if(duplicate){ errEl.textContent='One of these lunch slots already has a pending swap request.'; return; }
+  const previousRequests=DATA.lunchSwapRequests.slice();
+  DATA.lunchSwapRequests.push({
+    id:'lunch-swap:'+Date.now()+Math.random().toString(36).slice(2,8),
+    requester,
+    requesterStart:requesterBreak.start,
+    requesterEnd:requesterBreak.end,
+    targetAgent:targetBreak.agent,
+    targetStart:targetBreak.start,
+    targetEnd:targetBreak.end,
+    status:'pending',
+    createdAt:new Date().toISOString()
+  });
+  const saveResult=await saveLunchSwapRequests();
+  if(!saveResult.ok){
+    DATA.lunchSwapRequests=previousRequests;
+    const detail=saveResult.error?.code||saveResult.error?.message||saveResult.message||'unknown error';
+    errEl.textContent=`Could not save the request (${detail}).`;
+    return;
+  }
+  closeLunchSwapModal(); render();
+}
+function openLunchSwapApproval(id){
+  const req=(DATA.lunchSwapRequests||[]).find(item=>item.id===id); if(!req) return;
+  _lunchSwapApprovalId=id;
+  document.getElementById('lsw-approval-summary').textContent=`${req.requester}: ${fmtM(req.requesterStart)}–${fmtM(req.requesterEnd)} ↔ your lunch: ${fmtM(req.targetStart)}–${fmtM(req.targetEnd)}`;
+  document.getElementById('lsw-approval-pw').value='';
+  document.getElementById('lsw-approval-err').textContent='';
+  document.getElementById('lunch-swap-approval-modal').classList.add('open');
+}
+function closeLunchSwapApproval(){ document.getElementById('lunch-swap-approval-modal').classList.remove('open'); _lunchSwapApprovalId=null; }
+async function decideLunchSwap(approve){
+  const req=(DATA.lunchSwapRequests||[]).find(item=>item.id===_lunchSwapApprovalId);
+  const password=document.getElementById('lsw-approval-pw').value;
+  const errEl=document.getElementById('lsw-approval-err'); errEl.textContent='';
+  if(!req){ closeLunchSwapApproval(); return; }
+  if((DATA.agentPasswords||{})[req.targetAgent]!==password){ errEl.textContent='Enter the colleague’s passcode to confirm.'; return; }
+  const previousRequests=DATA.lunchSwapRequests.slice();
+  const previousLunches=DATA.lunchBreaks.map(item=>({...item}));
+  if(approve){
+    const requesterIndex=DATA.lunchBreaks.findIndex(item=>normalizeAgentKey(item.agent)===normalizeAgentKey(req.requester)&&item.start===req.requesterStart&&item.end===req.requesterEnd);
+    const targetIndex=DATA.lunchBreaks.findIndex(item=>normalizeAgentKey(item.agent)===normalizeAgentKey(req.targetAgent)&&item.start===req.targetStart&&item.end===req.targetEnd);
+    if(requesterIndex<0||targetIndex<0||requesterIndex===targetIndex){ errEl.textContent='The scheduled lunch changed. This request can no longer be approved.'; return; }
+    DATA.lunchBreaks[requesterIndex].start=req.targetStart;
+    DATA.lunchBreaks[requesterIndex].end=req.targetEnd;
+    DATA.lunchBreaks[targetIndex].start=req.requesterStart;
+    DATA.lunchBreaks[targetIndex].end=req.requesterEnd;
+  }
+  DATA.lunchSwapRequests=DATA.lunchSwapRequests.filter(item=>item.id!==req.id);
+  if(!_firestoreAvailable){
+    DATA.lunchSwapRequests=previousRequests; DATA.lunchBreaks=previousLunches;
+    errEl.textContent='Offline; the decision was not saved.'; return;
+  }
+  try{
+    await updateDoc(DOC_REF,{lunchSwapRequests:DATA.lunchSwapRequests,...(approve?{lunchBreaks:DATA.lunchBreaks}:{})});
+  }catch(error){
+    DATA.lunchSwapRequests=previousRequests; DATA.lunchBreaks=previousLunches;
+    console.error('Lunch swap decision failed:',error);
+    errEl.textContent='Could not save the decision. Check the connection and try again.'; return;
+  }
+  closeLunchSwapApproval(); render();
 }
 
 // ─── LEAVE MODAL ───
@@ -2598,16 +2750,27 @@ document.getElementById('phone-layout-edit-btn').addEventListener('click',openPh
 document.getElementById('nav-burger-btn').addEventListener('click',e=>{
   e.stopPropagation();
   const headerRight = document.querySelector('.header-right');
-  if(headerRight) headerRight.classList.toggle('menu-open');
+  if(!headerRight) return;
+  const isOpen=headerRight.classList.toggle('menu-open');
+  e.currentTarget.setAttribute('aria-expanded',String(isOpen));
+  e.currentTarget.setAttribute('aria-label',isOpen?'Close menu':'Open menu');
 });
 document.addEventListener('click',e=>{
   const headerRight = document.querySelector('.header-right');
   if(!headerRight) return;
-  if(!headerRight.contains(e.target)) headerRight.classList.remove('menu-open');
+  if(!headerRight.contains(e.target)){
+    headerRight.classList.remove('menu-open');
+    const menuButton=document.getElementById('nav-burger-btn');
+    menuButton.setAttribute('aria-expanded','false');
+    menuButton.setAttribute('aria-label','Open menu');
+  }
 });
 document.getElementById('nav-actions').addEventListener('click',()=>{
   const headerRight = document.querySelector('.header-right');
   if(headerRight) headerRight.classList.remove('menu-open');
+  const menuButton=document.getElementById('nav-burger-btn');
+  menuButton.setAttribute('aria-expanded','false');
+  menuButton.setAttribute('aria-label','Open menu');
 });
 document.getElementById('ple-save-btn').addEventListener('click',savePhoneLayout);
 document.getElementById('ple-cancel-btn').addEventListener('click',closePhoneLayoutEditor);
@@ -2661,6 +2824,14 @@ document.getElementById('pw-input').addEventListener('keydown',e=>{if(e.key==='E
 document.getElementById('admin-email').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('pw-input').focus();});
 document.getElementById('admin-btn').addEventListener('click',()=>{isAdminNow()?lockApp():showAdminLogin();});
 document.getElementById('my-break-btn').addEventListener('click',openAgentBreakModal);
+document.getElementById('lunch-swap-open-btn').addEventListener('click',openLunchSwapModal);
+document.getElementById('lsw-requester-pw').addEventListener('input',updateLunchSwapOptions);
+document.getElementById('lsw-target-agent').addEventListener('change',updateLunchSwapTargetSlots);
+document.getElementById('lsw-request-cancel').addEventListener('click',closeLunchSwapModal);
+document.getElementById('lsw-request-submit').addEventListener('click',submitLunchSwapRequest);
+document.getElementById('lsw-approval-cancel').addEventListener('click',closeLunchSwapApproval);
+document.getElementById('lsw-decline').addEventListener('click',()=>decideLunchSwap(false));
+document.getElementById('lsw-approve').addEventListener('click',()=>decideLunchSwap(true));
 document.getElementById('abm-cancel-btn').addEventListener('click',closeAgentBreakModal);
 document.getElementById('abm-ok-btn').addEventListener('click',confirmAgentBreak);
 document.getElementById('abm-pw').addEventListener('input',updateAbmQuota);
@@ -2714,7 +2885,11 @@ function handleViewerBreakEditRequest(e){
 }
 
 document.getElementById('viewer-grid').addEventListener('dblclick',handleViewerBreakEditRequest);
-document.getElementById('viewer-grid').addEventListener('click',e=>{ if(e.detail===2) handleViewerBreakEditRequest(e); });
+document.getElementById('viewer-grid').addEventListener('click',e=>{
+  const swapReview=e.target.closest('[data-action="lunch-swap-approve"]');
+  if(swapReview){ openLunchSwapApproval(swapReview.dataset.id); return; }
+  if(e.detail===2) handleViewerBreakEditRequest(e);
+});
 
 document.getElementById('custom-tasks-list').addEventListener('click',e=>{
   const btn=e.target.closest('[data-action]'); if(!btn) return; const act=btn.dataset.action; const idx=parseInt(btn.dataset.idx);

@@ -77,6 +77,38 @@
   </div>
 </div>
 
+<!-- LUNCH SWAP REQUEST MODAL -->
+<div class="modal-overlay" id="lunch-swap-modal">
+  <div class="modal" style="width:440px;max-width:95vw;">
+    <h2>Request a lunch swap</h2>
+    <p>Choose your lunch and a colleague’s lunch. They must approve with their passcode.</p>
+    <div class="modal-field"><label>Your passcode</label><input type="password" id="lsw-requester-pw" autocomplete="off" placeholder="Your passcode"/></div>
+    <div class="modal-field"><label>Your lunch</label><select id="lsw-my-lunch"><option value="">Enter your passcode first</option></select></div>
+    <div class="modal-field"><label>Colleague</label><select id="lsw-target-agent"><option value="">Select a colleague</option></select></div>
+    <div class="modal-field"><label>Their lunch</label><select id="lsw-target-lunch"><option value="">Select a colleague first</option></select></div>
+    <div class="lock-err" id="lsw-requester-err"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="lsw-request-cancel">Cancel</button>
+      <button class="modal-ok" id="lsw-request-submit" style="background:var(--green);color:#000;">Send request</button>
+    </div>
+  </div>
+</div>
+
+<!-- LUNCH SWAP APPROVAL MODAL -->
+<div class="modal-overlay" id="lunch-swap-approval-modal">
+  <div class="modal" style="width:420px;max-width:95vw;">
+    <h2>Review lunch swap</h2>
+    <p id="lsw-approval-summary"></p>
+    <div class="modal-field"><label>Your passcode</label><input type="password" id="lsw-approval-pw" autocomplete="off" placeholder="Your passcode"/></div>
+    <div class="lock-err" id="lsw-approval-err"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="lsw-approval-cancel">Cancel</button>
+      <button class="modal-ok" id="lsw-decline" style="background:var(--red);">Decline</button>
+      <button class="modal-ok" id="lsw-approve" style="background:var(--green);color:#000;">Approve swap</button>
+    </div>
+  </div>
+</div>
+
 <!-- EXCEL IMPORT MODAL -->
 <div class="modal-overlay" id="excel-modal">
   <div class="modal" style="width:520px;max-width:95vw;">
@@ -320,12 +352,13 @@
       </div>
       <div class="mode-badge viewer" id="mode-badge">VIEWER</div>
       <div class="mode-badge request-pip" id="request-pip" style="display:none;">0</div>
-      <button class="nav-burger-btn" id="nav-burger-btn" aria-label="Toggle mobile menu">☰</button>
+      <button class="nav-burger-btn" id="nav-burger-btn" aria-label="Open menu" aria-controls="nav-actions" aria-expanded="false">☰</button>
       <div class="nav-actions" id="nav-actions">
+        <button class="my-break-btn" id="lunch-swap-open-btn">🔄 Swap lunch</button>
+        <button class="my-break-btn" id="my-break-btn">☕ Request a break</button>
+        <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
         <button class="layout-edit-btn" id="layout-edit-btn">⊞ Edit Layout</button>
         <button class="layout-edit-btn phone-layout-edit-btn" id="phone-layout-edit-btn">⊞ Edit Phone View</button>
-        <button class="my-break-btn" id="my-break-btn">☕ My Break</button>
-        <button class="icon-btn" id="admin-btn" style="display:block!important;">🔐 Admin</button>
       </div>
     </div>
   </div>
