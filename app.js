@@ -1388,8 +1388,10 @@ function renderCustomTasks(){
 
 function renderBreakRequests(){
   const el=document.getElementById('break-requests-list'); if(!el) return;
-  if(!DATA.editRequests||!DATA.editRequests.length){ el.innerHTML='<div class="empty">No pending requests</div>'; return; }
-  el.innerHTML = DATA.editRequests.map((req,i)=>{
+  const editRequests=DATA.editRequests||[];
+  const swapRequests=DATA.lunchSwapRequests||[];
+  if(!editRequests.length&&!swapRequests.length){ el.innerHTML='<div class="empty">No pending requests</div>'; return; }
+  const editRows=editRequests.map(req=>{
     const now=nowMins(); const active=now>=req.originalStart&&now<req.originalEnd;
     const badgeClass=active?'badge-now':'badge-coffee';
     const originalTimes=fmtM(req.originalStart)+'–'+fmtM(req.originalEnd);
@@ -1406,6 +1408,16 @@ function renderBreakRequests(){
       <button class="del-btn" data-action="request-decline" data-id="${req.id}" title="Decline">✕</button>
     </div>`;
   }).join('');
+  const swapRows=swapRequests.map(req=>`<div class="break-row">
+    <div class="avatar" style="${avStyle(req.requester)}">${initials(req.requester)}</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:700;">Lunch swap · ${req.requester} ↔ ${req.targetAgent}</div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono);">${fmtM(req.requesterStart)}–${fmtM(req.requesterEnd)} ↔ ${fmtM(req.targetStart)}–${fmtM(req.targetEnd)}</div>
+    </div>
+    <button class="del-btn" data-action="request-swap-approve" data-id="${req.id}" title="Approve swap">✓</button>
+    <button class="del-btn" data-action="request-swap-decline" data-id="${req.id}" title="Decline swap">✕</button>
+  </div>`).join('');
+  el.innerHTML=editRows+swapRows;
 }
 
 function buildLunchSwapRequestsPanel(heightPx){
@@ -1865,24 +1877,31 @@ async function submitLunchSwapRequest(){
 function openLunchSwapApproval(id){
   const req=(DATA.lunchSwapRequests||[]).find(item=>item.id===id); if(!req) return;
   _lunchSwapApprovalId=id;
-  document.getElementById('lsw-approval-summary').textContent=`${req.requester}: ${fmtM(req.requesterStart)}–${fmtM(req.requesterEnd)} ↔ your lunch: ${fmtM(req.targetStart)}–${fmtM(req.targetEnd)}`;
+  const isAdmin=isAdminNow();
+  document.getElementById('lsw-approval-summary').textContent=`${req.requester}: ${fmtM(req.requesterStart)}–${fmtM(req.requesterEnd)} ↔ ${isAdmin?req.targetAgent+'’s lunch':'your lunch'}: ${fmtM(req.targetStart)}–${fmtM(req.targetEnd)}`;
+  document.getElementById('lsw-approval-pw').closest('.modal-field').style.display=isAdmin?'none':'';
   document.getElementById('lsw-approval-pw').value='';
   document.getElementById('lsw-approval-err').textContent='';
   document.getElementById('lunch-swap-approval-modal').classList.add('open');
 }
 function closeLunchSwapApproval(){ document.getElementById('lunch-swap-approval-modal').classList.remove('open'); _lunchSwapApprovalId=null; }
-async function decideLunchSwap(approve){
-  const req=(DATA.lunchSwapRequests||[]).find(item=>item.id===_lunchSwapApprovalId);
+async function decideLunchSwap(approve,requestId=null){
+  const id=requestId||_lunchSwapApprovalId;
+  const req=(DATA.lunchSwapRequests||[]).find(item=>item.id===id);
   const password=document.getElementById('lsw-approval-pw').value;
   const errEl=document.getElementById('lsw-approval-err'); errEl.textContent='';
-  if(!req){ closeLunchSwapApproval(); return; }
-  if((DATA.agentPasswords||{})[req.targetAgent]!==password){ errEl.textContent='Enter the colleague’s passcode to confirm.'; return; }
+  const showError=message=>{
+    if(_lunchSwapApprovalId===id) errEl.textContent=message;
+    else alert(message);
+  };
+  if(!req){ if(_lunchSwapApprovalId===id) closeLunchSwapApproval(); return; }
+  if(!isAdminNow()&&(DATA.agentPasswords||{})[req.targetAgent]!==password){ showError('Enter the colleague’s passcode to confirm.'); return; }
   const previousRequests=DATA.lunchSwapRequests.slice();
   const previousLunches=DATA.lunchBreaks.map(item=>({...item}));
   if(approve){
     const requesterIndex=DATA.lunchBreaks.findIndex(item=>normalizeAgentKey(item.agent)===normalizeAgentKey(req.requester)&&item.start===req.requesterStart&&item.end===req.requesterEnd);
     const targetIndex=DATA.lunchBreaks.findIndex(item=>normalizeAgentKey(item.agent)===normalizeAgentKey(req.targetAgent)&&item.start===req.targetStart&&item.end===req.targetEnd);
-    if(requesterIndex<0||targetIndex<0||requesterIndex===targetIndex){ errEl.textContent='The scheduled lunch changed. This request can no longer be approved.'; return; }
+    if(requesterIndex<0||targetIndex<0||requesterIndex===targetIndex){ showError('The scheduled lunch changed. This request can no longer be approved.'); return; }
     DATA.lunchBreaks[requesterIndex].start=req.targetStart;
     DATA.lunchBreaks[requesterIndex].end=req.targetEnd;
     DATA.lunchBreaks[targetIndex].start=req.requesterStart;
@@ -1891,16 +1910,17 @@ async function decideLunchSwap(approve){
   DATA.lunchSwapRequests=DATA.lunchSwapRequests.filter(item=>item.id!==req.id);
   if(!_firestoreAvailable){
     DATA.lunchSwapRequests=previousRequests; DATA.lunchBreaks=previousLunches;
-    errEl.textContent='Offline; the decision was not saved.'; return;
+    showError('Offline; the decision was not saved.'); return;
   }
   try{
     await updateDoc(DOC_REF,{lunchSwapRequests:DATA.lunchSwapRequests,...(approve?{lunchBreaks:DATA.lunchBreaks}:{})});
   }catch(error){
     DATA.lunchSwapRequests=previousRequests; DATA.lunchBreaks=previousLunches;
     console.error('Lunch swap decision failed:',error);
-    errEl.textContent='Could not save the decision. Check the connection and try again.'; return;
+    showError('Could not save the decision: '+(error.code||error.message)); return;
   }
-  closeLunchSwapApproval(); render();
+  if(_lunchSwapApprovalId===id) closeLunchSwapApproval();
+  render();
 }
 
 // ─── LEAVE MODAL ───
@@ -2900,6 +2920,10 @@ document.getElementById('custom-tasks-list').addEventListener('click',e=>{
 document.getElementById('break-requests-list').addEventListener('click',async e=>{
   const btn=e.target.closest('[data-action]'); if(!btn) return; const action=btn.dataset.action; const id=btn.dataset.id;
   try{requireAdmin();}catch(e){return;}
+  if(action==='request-swap-approve'||action==='request-swap-decline'){
+    await decideLunchSwap(action==='request-swap-approve',id);
+    return;
+  }
   const idx=DATA.editRequests.findIndex(r=>r.id===id); if(idx<0) return;
   if(action!=='request-approve'&&action!=='request-decline') return;
   const req=DATA.editRequests[idx];
